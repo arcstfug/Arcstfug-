@@ -36,7 +36,8 @@ data class Dpp(
     val userAnswers: Map<Int, Int> = emptyMap(), // questionIndex -> chosenOptionIndex
     val score: Int = 0,
     val timeSpentSeconds: Int = 0,
-    val completedAt: Long? = null
+    val completedAt: Long? = null,
+    val sourceBook: String? = null
 )
 
 data class LectureTimestamp(
@@ -94,6 +95,11 @@ data class CourseBatch(
     val subjects: List<SubjectDetail>
 )
 
+object ExternalStudyLinks {
+    const val PHYSICS_DRIVE_URL = "https://drive.google.com/drive/folders/1-Gii-7kSrT4Do8x6TkO3mhy4IxeP2o57"
+    const val ALL_INDIA_TEST_SERIES_URL = "https://deltastudy.fun/missionjeet/251"
+}
+
 data class TestExam(
     val id: String,
     val title: String,
@@ -102,7 +108,8 @@ data class TestExam(
     val durationMinutes: Int,
     val totalMarks: Int,
     val status: String,
-    val scheduledDate: String
+    val scheduledDate: String,
+    val externalUrl: String? = ExternalStudyLinks.ALL_INDIA_TEST_SERIES_URL
 )
 
 data class StudyBadge(
@@ -116,6 +123,9 @@ data class StudyBadge(
 data class UserProfile(
     val name: String,
     val targetExam: String,
+    val classLevel: String = "Class 12th",
+    val studentGoal: String = "Aim: Top 100 AIR",
+    val bio: String = "ARCSTFUG Scholar • Consistent Daily Problem Solver",
     val currentStreakDays: Int,
     val totalDppsSolved: Int,
     val overallAccuracy: Int,

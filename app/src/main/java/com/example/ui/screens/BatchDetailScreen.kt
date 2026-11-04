@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -36,6 +37,7 @@ fun BatchDetailScreen(
 ) {
     BackHandler { onBack() }
 
+    val uriHandler = LocalUriHandler.current
     val subjects = course.subjects
     var selectedSubjectIndex by remember { mutableIntStateOf(0) }
     val currentSubject = subjects.getOrNull(selectedSubjectIndex)
@@ -169,6 +171,58 @@ fun BatchDetailScreen(
                     }
                 }
 
+                // Physics Google Drive Folder Link when Physics Tab is Active
+                if (currentSubject?.type == SubjectType.PHYSICS) {
+                    item {
+                        Card(
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = PhysicsColor.copy(alpha = 0.12f)
+                            ),
+                            border = CardDefaults.outlinedCardBorder(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { uriHandler.openUri(ExternalStudyLinks.PHYSICS_DRIVE_URL) }
+                                .testTag("batch_physics_drive_card")
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.FolderSpecial,
+                                    contentDescription = "Physics Drive Folder",
+                                    tint = PhysicsColor,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "Physics Google Drive Folder",
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = "Tap to open complete Physics Drive materials & lectures",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Button(
+                                    onClick = { uriHandler.openUri(ExternalStudyLinks.PHYSICS_DRIVE_URL) },
+                                    colors = ButtonDefaults.buttonColors(containerColor = PhysicsColor),
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                ) {
+                                    Text("Open Drive", fontSize = 12.sp, color = Color.White)
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // Chapters & Lectures / DPPs
                 if (currentSubject != null && currentSubject.chapters.isNotEmpty()) {
                     items(currentSubject.chapters) { chapter ->
@@ -189,7 +243,7 @@ fun BatchDetailScreen(
                                 ) {
                                     Column {
                                         Text(
-                                            text = "Chapter ${chapter.order}: ${chapter.title}",
+                                            text = if (chapter.title.startsWith("Chapter", ignoreCase = true)) chapter.title else "Chapter ${chapter.order}: ${chapter.title}",
                                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                                             color = MaterialTheme.colorScheme.onSurface
                                         )

@@ -15,10 +15,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.model.ExternalStudyLinks
 import com.example.model.Lecture
 import com.example.model.SubjectType
 import com.example.ui.theme.*
@@ -30,6 +32,7 @@ fun LecturesScreen(
     onBookmarkToggle: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val uriHandler = LocalUriHandler.current
     var searchQuery by remember { mutableStateOf("") }
     var selectedSubject by remember { mutableStateOf<SubjectType?>(null) }
     var filterTab by remember { mutableStateOf("All") } // "All", "In Progress", "Completed", "Saved"
@@ -80,6 +83,69 @@ fun LecturesScreen(
                 shape = RoundedCornerShape(16.dp),
                 singleLine = true
             )
+        }
+
+        // Physics Google Drive Cloud Folder Banner
+        if (selectedSubject == null || selectedSubject == SubjectType.PHYSICS) {
+            item {
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = PhysicsColor.copy(alpha = 0.1f)
+                    ),
+                    border = CardDefaults.outlinedCardBorder(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { uriHandler.openUri(ExternalStudyLinks.PHYSICS_DRIVE_URL) }
+                        .testTag("lectures_physics_drive_card")
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(42.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(PhysicsColor),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.CloudDownload,
+                                contentDescription = "Physics Google Drive",
+                                tint = Color.White,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Physics Complete Google Drive Vault",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Access full Physics Lectures, Notes & Modules on Google Drive",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        Button(
+                            onClick = { uriHandler.openUri(ExternalStudyLinks.PHYSICS_DRIVE_URL) },
+                            colors = ButtonDefaults.buttonColors(containerColor = PhysicsColor),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                            modifier = Modifier.testTag("lectures_open_physics_drive_btn")
+                        ) {
+                            Text("Open Drive", fontSize = 11.sp, color = Color.White)
+                        }
+                    }
+                }
+            }
         }
 
         // Subject Filter Row

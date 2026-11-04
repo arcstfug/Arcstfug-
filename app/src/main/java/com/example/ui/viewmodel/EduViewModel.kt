@@ -634,6 +634,23 @@ class EduViewModel(
     }
 
     // Repository Delegation
+    fun updateUserProfile(
+        name: String,
+        targetExam: String,
+        classLevel: String,
+        studentGoal: String,
+        bio: String
+    ) {
+        repository.updateUserProfile(
+            name = name,
+            targetExam = targetExam,
+            classLevel = classLevel,
+            studentGoal = studentGoal,
+            bio = bio
+        )
+        showSnackbar("✅ Student profile updated successfully!")
+    }
+
     fun enrollCourse(courseId: String) {
         repository.enrollCourse(courseId)
         showSnackbar("Course status updated!")

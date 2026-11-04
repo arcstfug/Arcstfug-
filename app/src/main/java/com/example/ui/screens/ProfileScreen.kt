@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -37,8 +38,17 @@ fun ProfileScreen(
     studyPlannerAiState: AiUiState,
     onPostDoubt: (String, SubjectType) -> Unit,
     onGenerateStudyPlan: (Int, SubjectType, String) -> Unit,
+    onUpdateProfile: (String, String, String, String, String) -> Unit = { _, _, _, _, _ -> },
     modifier: Modifier = Modifier
 ) {
+    val uriHandler = LocalUriHandler.current
+    var showEditProfileDialog by remember { mutableStateOf(false) }
+    var editName by remember(userProfile.name) { mutableStateOf(userProfile.name) }
+    var editTargetExam by remember(userProfile.targetExam) { mutableStateOf(userProfile.targetExam) }
+    var editClassLevel by remember(userProfile.classLevel) { mutableStateOf(userProfile.classLevel) }
+    var editStudentGoal by remember(userProfile.studentGoal) { mutableStateOf(userProfile.studentGoal) }
+    var editBio by remember(userProfile.bio) { mutableStateOf(userProfile.bio) }
+
     var showDoubtDialog by remember { mutableStateOf(false) }
     var doubtText by remember { mutableStateOf("") }
     var selectedSubject by remember { mutableStateOf(SubjectType.PHYSICS) }
@@ -58,7 +68,7 @@ fun ProfileScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(top = 12.dp, bottom = 28.dp)
     ) {
-        // User Profile Card with Official ARCSTFUG Square Crest Logo
+        // User Profile Card with Official ARCSTFUG Square Crest Logo & Edit Profile Action
         item {
             Card(
                 shape = RoundedCornerShape(20.dp),
@@ -97,15 +107,21 @@ fun ProfileScreen(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = userProfile.targetExam,
+                                text = "${userProfile.classLevel} • ${userProfile.targetExam}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = "🏆 ARCSTFUG Scholar • Aim: Top 100 AIR",
-                                style = MaterialTheme.typography.labelSmall,
+                                text = "🏆 ${userProfile.studentGoal}",
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = userProfile.bio,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 2
                             )
                         }
 
@@ -120,6 +136,34 @@ fun ProfileScreen(
                                 Text("🔥 ${userProfile.currentStreakDays}d", fontWeight = FontWeight.Bold, color = Color(0xFF78350F))
                                 Text("Streak", style = MaterialTheme.typography.labelSmall, color = Color(0xFF78350F))
                             }
+                        }
+                    }
+
+                    // Edit Student Profile Button Row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        FilledTonalButton(
+                            onClick = {
+                                editName = userProfile.name
+                                editTargetExam = userProfile.targetExam
+                                editClassLevel = userProfile.classLevel
+                                editStudentGoal = userProfile.studentGoal
+                                editBio = userProfile.bio
+                                showEditProfileDialog = true
+                            },
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                            modifier = Modifier.testTag("edit_profile_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Edit,
+                                contentDescription = "Edit Student Profile",
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Edit Student Profile", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
                     }
 
@@ -150,6 +194,81 @@ fun ProfileScreen(
                             value = "${userProfile.overallAccuracy}%",
                             modifier = Modifier.weight(1f)
                         )
+                    }
+                }
+            }
+        }
+
+        // About Us & Founders Section (Abhishek Kumar & Anirudhh Mishra)
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    text = "About Us",
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = CardDefaults.outlinedCardBorder(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("about_us_founders_card")
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Info,
+                                contentDescription = "About Us",
+                                tint = IndigoPrimary,
+                                modifier = Modifier.size(22.dp)
+                            )
+                            Column {
+                                Text(
+                                    text = "About ARCSTFUG",
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "Founders & Visionaries",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        Text(
+                            text = "ARCSTFUG is a premier educational platform dedicated to helping JEE, NEET, and Board aspirants excel through interactive lectures, daily practice problems (DPP), All-India Test Series, and AI-powered tutoring.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            FounderBadgeCard(
+                                name = "Abhishek Kumar",
+                                role = "Founder • ARCSTFUG",
+                                initials = "AK",
+                                accentColor = IndigoPrimary,
+                                modifier = Modifier.weight(1f)
+                            )
+                            FounderBadgeCard(
+                                name = "Anirudhh Mishra",
+                                role = "Founder • ARCSTFUG",
+                                initials = "AM",
+                                accentColor = CyanAccent,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
                 }
             }
@@ -359,16 +478,85 @@ fun ProfileScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "All-India Test Series (AITS)",
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "Real Exam Engine",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    Column {
+                        Text(
+                            text = "All-India Test Series (AITS)",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "Official Portal: deltastudy.fun/missionjeet/251",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Button(
+                        onClick = { uriHandler.openUri(ExternalStudyLinks.ALL_INDIA_TEST_SERIES_URL) },
+                        colors = ButtonDefaults.buttonColors(containerColor = EmeraldSuccess),
+                        shape = RoundedCornerShape(10.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                        modifier = Modifier.testTag("open_aits_main_btn")
+                    ) {
+                        Text("Launch Portal", fontSize = 11.sp, color = Color.White)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.Filled.OpenInNew,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = Color.White
+                        )
+                    }
+                }
+
+                // Physics Google Drive Quick Access Card inside Profile
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = PhysicsColor.copy(alpha = 0.1f)),
+                    border = CardDefaults.outlinedCardBorder(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { uriHandler.openUri(ExternalStudyLinks.PHYSICS_DRIVE_URL) }
+                        .testTag("profile_physics_drive_card")
+                ) {
+                    Row(
+                        modifier = Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(42.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(PhysicsColor),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.FolderSpecial,
+                                contentDescription = "Physics Drive",
+                                tint = Color.White,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Physics Complete Google Drive Vault",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Notes, Lectures & PYQ Drive Folder",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        FilledTonalButton(
+                            onClick = { uriHandler.openUri(ExternalStudyLinks.PHYSICS_DRIVE_URL) },
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text("Open Drive", fontSize = 12.sp)
+                        }
+                    }
                 }
 
                 mockTests.forEach { testExam ->
@@ -419,7 +607,7 @@ fun ProfileScreen(
                                 shape = RoundedCornerShape(8.dp),
                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
                             ) {
-                                Text("Details", fontSize = 12.sp)
+                                Text("Attempt", fontSize = 12.sp)
                             }
                         }
                     }
@@ -706,6 +894,7 @@ fun ProfileScreen(
     // Exam Modal
     if (selectedExamModal != null) {
         val exam = selectedExamModal!!
+        val targetUrl = exam.externalUrl ?: ExternalStudyLinks.ALL_INDIA_TEST_SERIES_URL
         AlertDialog(
             onDismissRequest = { selectedExamModal = null },
             title = { Text(exam.title) },
@@ -716,6 +905,7 @@ fun ProfileScreen(
                     Text("• Total Duration: ${exam.durationMinutes} minutes")
                     Text("• Total Marks: ${exam.totalMarks}")
                     Text("• Status: ${exam.status} (${exam.scheduledDate})")
+                    Text("• Portal: $targetUrl", color = IndigoPrimary, style = MaterialTheme.typography.labelSmall)
                     Text("Rules: +4 for correct answer, -1 for wrong response. Calculators not permitted.")
                 }
             },
@@ -723,10 +913,17 @@ fun ProfileScreen(
                 Button(
                     onClick = {
                         selectedExamModal = null
+                        uriHandler.openUri(targetUrl)
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = IndigoPrimary)
                 ) {
                     Text("Enter Exam Room")
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Icon(
+                        imageVector = Icons.Filled.OpenInNew,
+                        contentDescription = null,
+                        modifier = Modifier.size(15.dp)
+                    )
                 }
             },
             dismissButton = {
@@ -735,6 +932,170 @@ fun ProfileScreen(
                 }
             }
         )
+    }
+
+    // Edit Student Profile Dialog
+    if (showEditProfileDialog) {
+        val targetExamPresets = listOf(
+            "JEE Main & Advanced 2026",
+            "NEET-UG 2026",
+            "Class 12th Board + JEE",
+            "Class 10th Board Booster"
+        )
+        val classPresets = listOf("Class 10th", "Class 11th", "Class 12th", "Dropper / Target")
+
+        AlertDialog(
+            onDismissRequest = { showEditProfileDialog = false },
+            title = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(Icons.Filled.Edit, contentDescription = null, tint = IndigoPrimary)
+                    Text("Edit Student Profile")
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedTextField(
+                        value = editName,
+                        onValueChange = { editName = it },
+                        label = { Text("Student Full Name") },
+                        singleLine = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("edit_profile_name_input")
+                    )
+
+                    Text(
+                        text = "Select Class / Batch Level:",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
+                    )
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        items(classPresets) { preset ->
+                            FilterChip(
+                                selected = editClassLevel == preset,
+                                onClick = { editClassLevel = preset },
+                                label = { Text(preset, fontSize = 11.sp) }
+                            )
+                        }
+                    }
+
+                    OutlinedTextField(
+                        value = editTargetExam,
+                        onValueChange = { editTargetExam = it },
+                        label = { Text("Target Exam") },
+                        singleLine = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("edit_profile_exam_input")
+                    )
+
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        items(targetExamPresets) { examPreset ->
+                            SuggestionChip(
+                                onClick = { editTargetExam = examPreset },
+                                label = { Text(examPreset, fontSize = 10.sp) }
+                            )
+                        }
+                    }
+
+                    OutlinedTextField(
+                        value = editStudentGoal,
+                        onValueChange = { editStudentGoal = it },
+                        label = { Text("Target Rank / Academic Goal") },
+                        placeholder = { Text("e.g. Aim: Top 100 AIR") },
+                        singleLine = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("edit_profile_goal_input")
+                    )
+
+                    OutlinedTextField(
+                        value = editBio,
+                        onValueChange = { editBio = it },
+                        label = { Text("Student Bio / Motto") },
+                        maxLines = 2,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("edit_profile_bio_input")
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onUpdateProfile(
+                            editName,
+                            editTargetExam,
+                            editClassLevel,
+                            editStudentGoal,
+                            editBio
+                        )
+                        showEditProfileDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = IndigoPrimary),
+                    modifier = Modifier.testTag("save_profile_button")
+                ) {
+                    Text("Save Profile")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditProfileDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+}
+
+@Composable
+fun FounderBadgeCard(
+    name: String,
+    role: String,
+    initials: String,
+    accentColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+        border = CardDefaults.outlinedCardBorder(),
+        modifier = modifier
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(accentColor.copy(alpha = 0.18f))
+                    .border(1.dp, accentColor.copy(alpha = 0.5f), RoundedCornerShape(10.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = initials,
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.ExtraBold),
+                    color = accentColor
+                )
+            }
+            Column {
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = role,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 10.sp
+                )
+            }
+        }
     }
 }
 

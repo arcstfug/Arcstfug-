@@ -38,6 +38,24 @@ class EduRepository {
     private val _doubts = MutableStateFlow(createInitialDoubts())
     val doubts: StateFlow<List<DoubtQuery>> = _doubts.asStateFlow()
 
+    fun updateUserProfile(
+        name: String,
+        targetExam: String,
+        classLevel: String,
+        studentGoal: String,
+        bio: String
+    ) {
+        _userProfile.update { current ->
+            current.copy(
+                name = name.trim().ifEmpty { current.name },
+                targetExam = targetExam.trim().ifEmpty { current.targetExam },
+                classLevel = classLevel.trim().ifEmpty { current.classLevel },
+                studentGoal = studentGoal.trim().ifEmpty { current.studentGoal },
+                bio = bio.trim().ifEmpty { current.bio }
+            )
+        }
+    }
+
     fun enrollCourse(courseId: String) {
         _courses.update { list ->
             list.map { course ->
@@ -456,7 +474,7 @@ class EduRepository {
                                     )
                                 )
                             )
-                        )
+                        ) + HcVermaPhysicsDpps.getHcVermaChapters()
                     ),
                     SubjectDetail(
                         type = SubjectType.CHEMISTRY,
@@ -601,7 +619,7 @@ class EduRepository {
                                     )
                                 )
                             )
-                        )
+                        ) + CengageAlgebraDpps.getCengageChapters()
                     )
                 )
             ),
@@ -716,6 +734,17 @@ class EduRepository {
     private fun createInitialMockTests(): List<TestExam> {
         return listOf(
             TestExam(
+                id = "test_0",
+                title = "All-India Test Series (Mission JEET Portal)",
+                pattern = "Live Online Test Series • DeltaStudy",
+                questionsCount = 75,
+                durationMinutes = 180,
+                totalMarks = 300,
+                status = "Live Portal",
+                scheduledDate = "Open Now",
+                externalUrl = ExternalStudyLinks.ALL_INDIA_TEST_SERIES_URL
+            ),
+            TestExam(
                 id = "test_1",
                 title = "ARCSTFUG All-India JEE Main Mock 01",
                 pattern = "JEE Main (NTA Pattern)",
@@ -723,7 +752,8 @@ class EduRepository {
                 durationMinutes = 180,
                 totalMarks = 300,
                 status = "Live Now",
-                scheduledDate = "Active Today"
+                scheduledDate = "Active Today",
+                externalUrl = ExternalStudyLinks.ALL_INDIA_TEST_SERIES_URL
             ),
             TestExam(
                 id = "test_2",
@@ -733,7 +763,8 @@ class EduRepository {
                 durationMinutes = 200,
                 totalMarks = 720,
                 status = "Upcoming",
-                scheduledDate = "Sunday 10:00 AM"
+                scheduledDate = "Sunday 10:00 AM",
+                externalUrl = ExternalStudyLinks.ALL_INDIA_TEST_SERIES_URL
             ),
             TestExam(
                 id = "test_3",
@@ -743,7 +774,8 @@ class EduRepository {
                 durationMinutes = 60,
                 totalMarks = 120,
                 status = "Available Anytime",
-                scheduledDate = "Self-Paced"
+                scheduledDate = "Self-Paced",
+                externalUrl = ExternalStudyLinks.ALL_INDIA_TEST_SERIES_URL
             )
         )
     }

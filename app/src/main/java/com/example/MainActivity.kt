@@ -250,6 +250,9 @@ fun MainAppContent(viewModel: EduViewModel = viewModel()) {
                             onGenerateStudyPlan = { hours, subj, weakTopics ->
                                 viewModel.generateAiStudyPlan(hours, subj, weakTopics)
                             },
+                            onUpdateProfile = { name, targetExam, classLevel, studentGoal, bio ->
+                                viewModel.updateUserProfile(name, targetExam, classLevel, studentGoal, bio)
+                            },
                             modifier = Modifier.fillMaxSize()
                         )
                     }

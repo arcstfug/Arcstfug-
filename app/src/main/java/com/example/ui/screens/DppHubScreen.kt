@@ -33,6 +33,50 @@ fun DppHubScreen(
 ) {
     var selectedSubject by remember { mutableStateOf<SubjectType?>(null) }
     var selectedStatus by remember { mutableStateOf("ALL") } // "ALL", "PENDING", "COMPLETED"
+    var selectedBookFilter by remember { mutableStateOf("ALL") } // "ALL", "HCV", "CENGAGE"
+    var selectedHcvChapter by remember { mutableStateOf("All Chapters") }
+    var selectedCengageChapter by remember { mutableStateOf("All Chapters") }
+
+    val hcvChapterOptions = remember {
+        listOf(
+            "All Chapters",
+            "Ch 1: Intro to Physics",
+            "Ch 2: Physics & Math",
+            "Ch 3: Kinematics",
+            "Ch 4: The Forces",
+            "Ch 5: Newton's Laws",
+            "Ch 6: Friction",
+            "Ch 7: Circular Motion",
+            "Ch 8: Work & Energy",
+            "Ch 9: Centre of Mass",
+            "Ch 10: Rotational Mechanics",
+            "Ch 11: Gravitation",
+            "Ch 12: SHM",
+            "Ch 13: Fluid Mechanics",
+            "Ch 14: Properties of Matter",
+            "Ch 15: Waves on a String",
+            "Ch 16: Sound Waves",
+            "Ch 17: Light Waves",
+            "Ch 18: Geometrical Optics",
+            "Ch 19: Optical Instruments",
+            "Ch 20: Dispersion & Photometry"
+        )
+    }
+
+    val cengageChapterOptions = remember {
+        listOf(
+            "All Chapters",
+            "Chapter 1: Number System",
+            "Chapter 2: Complex Numbers",
+            "Chapter 3: Progression & Series",
+            "Chapter 4: Inequalities (Means)",
+            "Chapter 5: Permutation & Combination",
+            "Chapter 6: Binomial Theorem",
+            "Chapter 7: Determinants",
+            "Chapter 8: Matrices",
+            "Chapter 9: Probability"
+        )
+    }
 
     var showAiGeneratorDialog by remember { mutableStateOf(false) }
     var aiTopicInput by remember { mutableStateOf("") }
@@ -47,7 +91,32 @@ fun DppHubScreen(
             "COMPLETED" -> dpp.status == DppStatus.COMPLETED
             else -> true
         }
-        matchesSubject && matchesStatus
+        val matchesBook = when (selectedBookFilter) {
+            "ALL" -> true
+            "HCV" -> dpp.sourceBook?.contains("H.C. Verma", ignoreCase = true) == true
+            "CENGAGE" -> dpp.sourceBook?.contains("Cengage", ignoreCase = true) == true
+            else -> true
+        }
+        val matchesChapter = when (selectedBookFilter) {
+            "HCV" -> {
+                if (selectedHcvChapter == "All Chapters") true
+                else {
+                    val chPrefix = selectedHcvChapter.substringBefore(":")
+                    dpp.chapterTitle.contains(chPrefix, ignoreCase = true) ||
+                    dpp.chapterTitle.contains(chPrefix.replace("Ch ", "Chapter "), ignoreCase = true)
+                }
+            }
+            "CENGAGE" -> {
+                if (selectedCengageChapter == "All Chapters") true
+                else {
+                    val chPrefix = selectedCengageChapter.substringBefore(":")
+                    dpp.chapterTitle.contains(chPrefix, ignoreCase = true)
+                }
+            }
+            else -> true
+        }
+
+        matchesSubject && matchesStatus && matchesBook && matchesChapter
     }
 
     LazyColumn(
@@ -242,6 +311,257 @@ fun DppHubScreen(
                                             Text("Dismiss", color = RoseError)
                                         }
                                     }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Specialized Book Practice Series Section
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                // Book Filter Tabs
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf(
+                        "ALL" to "📚 All Sheets",
+                        "HCV" to "⚡ HC Verma Physics",
+                        "CENGAGE" to "📖 Cengage Algebra"
+                    ).forEach { (bookKey, bookLabel) ->
+                        val isSelected = selectedBookFilter == bookKey
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = {
+                                selectedBookFilter = bookKey
+                                when (bookKey) {
+                                    "HCV" -> selectedSubject = SubjectType.PHYSICS
+                                    "CENGAGE" -> selectedSubject = SubjectType.MATHEMATICS
+                                    else -> {}
+                                }
+                            },
+                            label = { Text(bookLabel, fontSize = 12.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal) },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.weight(1f).testTag("filter_book_$bookKey")
+                        )
+                    }
+                }
+
+                // Concepts of Physics - H.C. Verma (Vol 1) Card
+                if (selectedBookFilter == "ALL" || selectedBookFilter == "HCV") {
+                    Card(
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (selectedBookFilter == "HCV") PhysicsColor.copy(alpha = 0.08f) else MaterialTheme.colorScheme.surface
+                        ),
+                        border = CardDefaults.outlinedCardBorder(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("hc_verma_physics_hub_card")
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = PhysicsColor.copy(alpha = 0.15f)
+                                    ) {
+                                        Text(
+                                            text = "⚡ CONCEPTS OF PHYSICS",
+                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                            color = PhysicsColor,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                        )
+                                    }
+                                    Text(
+                                        text = "Dr. H. C. Verma • Vol 1",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+
+                                Switch(
+                                    checked = selectedBookFilter == "HCV",
+                                    onCheckedChange = { isChecked ->
+                                        selectedBookFilter = if (isChecked) "HCV" else "ALL"
+                                        if (isChecked) {
+                                            selectedSubject = SubjectType.PHYSICS
+                                        }
+                                    },
+                                    modifier = Modifier.testTag("toggle_hcv_filter")
+                                )
+                            }
+
+                            Text(
+                                text = "Distinct Chapter-wise DPPs (All 20 Chapters)",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+
+                            Text(
+                                text = "Authentic conceptual questions, Objective I & II, worked examples, and step-by-step physical derivations from H.C. Verma (Part 01).",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            if (selectedBookFilter == "HCV") {
+                                Text(
+                                    text = "Select Independent Chapter:",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+
+                                LazyRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    contentPadding = PaddingValues(vertical = 4.dp)
+                                ) {
+                                    items(hcvChapterOptions) { chOption ->
+                                        val isSelected = selectedHcvChapter == chOption
+                                        FilterChip(
+                                            selected = isSelected,
+                                            onClick = { selectedHcvChapter = chOption },
+                                            label = { Text(chOption, fontSize = 12.sp) },
+                                            shape = RoundedCornerShape(16.dp),
+                                            modifier = Modifier.testTag("chip_hcv_${chOption.take(10).replace(" ", "_")}")
+                                        )
+                                    }
+                                }
+                            } else {
+                                Button(
+                                    onClick = {
+                                        selectedBookFilter = "HCV"
+                                        selectedSubject = SubjectType.PHYSICS
+                                    },
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = PhysicsColor),
+                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                                    modifier = Modifier.testTag("btn_explore_hcv_chapters")
+                                ) {
+                                    Icon(Icons.Filled.MenuBook, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("Open H.C. Verma 20-Chapter DPP Series", fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Cengage Algebra (G. Tewani) Card
+                if (selectedBookFilter == "ALL" || selectedBookFilter == "CENGAGE") {
+                    Card(
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (selectedBookFilter == "CENGAGE") MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
+                        ),
+                        border = CardDefaults.outlinedCardBorder(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("cengage_algebra_hub_card")
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = MathsColor.copy(alpha = 0.15f)
+                                    ) {
+                                        Text(
+                                            text = "📖 CENGAGE ALGEBRA",
+                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                            color = MathsColor,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                        )
+                                    }
+                                    Text(
+                                        text = "G. Tewani Edition",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+
+                                Switch(
+                                    checked = selectedBookFilter == "CENGAGE",
+                                    onCheckedChange = { isChecked ->
+                                        selectedBookFilter = if (isChecked) "CENGAGE" else "ALL"
+                                        if (isChecked) {
+                                            selectedSubject = SubjectType.MATHEMATICS
+                                        }
+                                    },
+                                    modifier = Modifier.testTag("toggle_cengage_filter")
+                                )
+                            }
+
+                            Text(
+                                text = "Chapter-wise Daily Practice Problems (9 Chapters)",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+
+                            Text(
+                                text = "Authentic objective problems, concept application exercises, step-by-step mathematical proofs & hints from Cengage Algebra.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            if (selectedBookFilter == "CENGAGE") {
+                                Text(
+                                    text = "Select Independent Chapter:",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+
+                                LazyRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    contentPadding = PaddingValues(vertical = 4.dp)
+                                ) {
+                                    items(cengageChapterOptions) { chOption ->
+                                        val isSelected = selectedCengageChapter == chOption
+                                        FilterChip(
+                                            selected = isSelected,
+                                            onClick = { selectedCengageChapter = chOption },
+                                            label = { Text(chOption, fontSize = 12.sp) },
+                                            shape = RoundedCornerShape(16.dp),
+                                            modifier = Modifier.testTag("chip_cengage_${chOption.take(10).replace(" ", "_")}")
+                                        )
+                                    }
+                                }
+                            } else {
+                                Button(
+                                    onClick = {
+                                        selectedBookFilter = "CENGAGE"
+                                        selectedSubject = SubjectType.MATHEMATICS
+                                    },
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = MathsColor),
+                                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                                    modifier = Modifier.testTag("btn_explore_cengage_chapters")
+                                ) {
+                                    Icon(Icons.Filled.MenuBook, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("Open Cengage 9-Chapter DPP Series", fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -514,6 +834,27 @@ fun DppCardItem(
                         color = if (dpp.status == DppStatus.COMPLETED) EmeraldSuccess else Color(0xFF78350F),
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                     )
+                }
+            }
+
+            dpp.sourceBook?.let { bookSource ->
+                val isHcv = bookSource.contains("H.C. Verma", ignoreCase = true)
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = if (isHcv) PhysicsColor.copy(alpha = 0.12f) else AmberContainer.copy(alpha = 0.7f)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                    ) {
+                        Text(if (isHcv) "⚡" else "📖", fontSize = 11.sp)
+                        Text(
+                            text = bookSource,
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = if (isHcv) PhysicsColor else Color(0xFF78350F)
+                        )
+                    }
                 }
             }
 

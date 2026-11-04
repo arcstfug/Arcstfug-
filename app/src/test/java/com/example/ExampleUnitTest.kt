@@ -35,4 +35,29 @@ class ExampleUnitTest {
     assertEquals(DppStatus.PENDING, reattemptedDpp?.status)
     assertEquals(0, reattemptedDpp?.score)
   }
+
+  @Test
+  fun testHcVermaPhysicsChaptersAndDpps() {
+    val repo = EduRepository()
+    val allDpps = repo.getAllDpps()
+    val hcvDpps = allDpps.filter { it.sourceBook?.contains("H.C. Verma") == true }
+    assertEquals(20, hcvDpps.size)
+
+    val ch1Dpp = repo.findDppById("dpp_hcv_ch1")
+    assertNotNull(ch1Dpp)
+    assertEquals("Chapter 1: Introduction to Physics", ch1Dpp?.chapterTitle)
+    assertEquals(4, ch1Dpp?.questions?.size)
+
+    val ch18Dpp = repo.findDppById("dpp_hcv_ch18")
+    assertNotNull(ch18Dpp)
+    assertEquals("Chapter 18: Geometrical Optics", ch18Dpp?.chapterTitle)
+  }
+
+  @Test
+  fun testCengageAlgebraChaptersAndDpps() {
+    val repo = EduRepository()
+    val allDpps = repo.getAllDpps()
+    val cengageDpps = allDpps.filter { it.sourceBook?.contains("Cengage") == true }
+    assertEquals(9, cengageDpps.size)
+  }
 }
