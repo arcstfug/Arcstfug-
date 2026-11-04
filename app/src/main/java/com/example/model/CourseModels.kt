@@ -1,0 +1,136 @@
+package com.example.model
+
+enum class SubjectType(val displayName: String) {
+    PHYSICS("Physics"),
+    CHEMISTRY("Chemistry"),
+    MATHEMATICS("Mathematics"),
+    BIOLOGY("Biology")
+}
+
+data class Question(
+    val id: String,
+    val questionText: String,
+    val options: List<String>,
+    val correctOptionIndex: Int,
+    val explanation: String,
+    val hint: String,
+    val topic: String
+)
+
+enum class DppStatus {
+    PENDING,
+    IN_PROGRESS,
+    COMPLETED
+}
+
+data class Dpp(
+    val id: String,
+    val number: Int,
+    val title: String,
+    val subject: SubjectType,
+    val chapterTitle: String,
+    val courseId: String,
+    val questions: List<Question>,
+    val timeLimitMinutes: Int = 15,
+    val status: DppStatus = DppStatus.PENDING,
+    val userAnswers: Map<Int, Int> = emptyMap(), // questionIndex -> chosenOptionIndex
+    val score: Int = 0,
+    val timeSpentSeconds: Int = 0,
+    val completedAt: Long? = null
+)
+
+data class LectureTimestamp(
+    val timeSec: Int,
+    val timeLabel: String,
+    val title: String
+)
+
+data class Lecture(
+    val id: String,
+    val courseId: String,
+    val subject: SubjectType,
+    val chapterId: String,
+    val chapterTitle: String,
+    val title: String,
+    val lectureNumber: Int,
+    val instructor: String,
+    val durationMinutes: Int,
+    val progressSec: Int = 0,
+    val isCompleted: Boolean = false,
+    val isBookmarked: Boolean = false,
+    val notesSummary: List<String> = emptyList(),
+    val timestamps: List<LectureTimestamp> = emptyList(),
+    val dppId: String? = null
+)
+
+data class Chapter(
+    val id: String,
+    val subject: SubjectType,
+    val title: String,
+    val order: Int,
+    val lectures: List<Lecture>,
+    val dpps: List<Dpp>
+)
+
+data class SubjectDetail(
+    val type: SubjectType,
+    val chapters: List<Chapter>
+)
+
+data class CourseBatch(
+    val id: String,
+    val title: String,
+    val category: String,
+    val tag: String,
+    val rating: Float,
+    val enrolledCount: String,
+    val price: String,
+    val originalPrice: String,
+    val instructorTeam: String,
+    val description: String,
+    val syllabusCoveragePercent: Int,
+    val isEnrolled: Boolean,
+    val bannerColorHex: Long,
+    val subjects: List<SubjectDetail>
+)
+
+data class TestExam(
+    val id: String,
+    val title: String,
+    val pattern: String,
+    val questionsCount: Int,
+    val durationMinutes: Int,
+    val totalMarks: Int,
+    val status: String,
+    val scheduledDate: String
+)
+
+data class StudyBadge(
+    val id: String,
+    val title: String,
+    val description: String,
+    val icon: String,
+    val isUnlocked: Boolean
+)
+
+data class UserProfile(
+    val name: String,
+    val targetExam: String,
+    val currentStreakDays: Int,
+    val totalDppsSolved: Int,
+    val overallAccuracy: Int,
+    val lecturesWatched: Int,
+    val studyHours: Float,
+    val xp: Int,
+    val badges: List<StudyBadge>
+)
+
+data class DoubtQuery(
+    val id: String,
+    val studentName: String,
+    val questionText: String,
+    val subject: SubjectType,
+    val status: String,
+    val facultyReply: String?,
+    val timestamp: String
+)

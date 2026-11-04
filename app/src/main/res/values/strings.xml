@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">ARCSTFUG</string>
+    <string name="tagline">Empowering Minds, Shaping Futures</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_lectures">Lectures</string>
+    <string name="nav_practice">Practice</string>
+    <string name="nav_profile">Profile</string>
+    <string name="nav_courses">Batches</string>
+</resources>
