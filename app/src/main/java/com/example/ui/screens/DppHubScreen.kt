@@ -59,7 +59,9 @@ fun DppHubScreen(
             "Ch 17: Light Waves",
             "Ch 18: Geometrical Optics",
             "Ch 19: Optical Instruments",
-            "Ch 20: Dispersion & Photometry"
+            "Ch 20: Dispersion & Spectra",
+            "Ch 21: Speed of Light",
+            "Ch 22: Photometry"
         )
     }
 
@@ -102,8 +104,9 @@ fun DppHubScreen(
                 if (selectedHcvChapter == "All Chapters") true
                 else {
                     val chPrefix = selectedHcvChapter.substringBefore(":")
-                    dpp.chapterTitle.contains(chPrefix, ignoreCase = true) ||
-                    dpp.chapterTitle.contains(chPrefix.replace("Ch ", "Chapter "), ignoreCase = true)
+                    val fullChPrefix = chPrefix.replace("Ch ", "Chapter ")
+                    dpp.chapterTitle.startsWith("$chPrefix:", ignoreCase = true) ||
+                    dpp.chapterTitle.startsWith("$fullChPrefix:", ignoreCase = true)
                 }
             }
             "CENGAGE" -> {
@@ -406,13 +409,13 @@ fun DppHubScreen(
                             }
 
                             Text(
-                                text = "Distinct Chapter-wise DPPs (All 20 Chapters)",
+                                text = "Distinct Chapter-wise DPPs (All 22 Chapters)",
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                 color = MaterialTheme.colorScheme.onSurface
                             )
 
                             Text(
-                                text = "Authentic conceptual questions, Objective I & II, worked examples, and step-by-step physical derivations from H.C. Verma (Part 01).",
+                                text = "Authentic conceptual questions, Objective I (Single Correct) & Objective II (Multiple Correct), worked examples, and step-by-step physical derivations from H.C. Verma (Part 01).",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -452,7 +455,7 @@ fun DppHubScreen(
                                 ) {
                                     Icon(Icons.Filled.MenuBook, contentDescription = null, modifier = Modifier.size(16.dp))
                                     Spacer(Modifier.width(8.dp))
-                                    Text("Open H.C. Verma 20-Chapter DPP Series", fontWeight = FontWeight.Bold)
+                                    Text("Open H.C. Verma 22-Chapter DPP Series", fontWeight = FontWeight.Bold)
                                 }
                             }
                         }

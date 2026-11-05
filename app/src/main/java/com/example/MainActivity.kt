@@ -127,6 +127,7 @@ fun MainAppContent(
 
     val dppQuestionIndex by viewModel.dppQuestionIndex.collectAsStateWithLifecycle()
     val dppUserAnswers by viewModel.dppUserAnswers.collectAsStateWithLifecycle()
+    val dppUserMultiAnswers by viewModel.dppUserMultiAnswers.collectAsStateWithLifecycle()
     val dppReviewFlags by viewModel.dppReviewFlags.collectAsStateWithLifecycle()
     val dppTimerSec by viewModel.dppTimerSec.collectAsStateWithLifecycle()
 
@@ -205,6 +206,7 @@ fun MainAppContent(
                 dpp = activeDppSolving,
                 currentQuestionIndex = dppQuestionIndex,
                 userAnswers = dppUserAnswers,
+                userMultiAnswers = dppUserMultiAnswers,
                 reviewFlags = dppReviewFlags,
                 timerSec = dppTimerSec,
                 onSelectOption = { qIdx, optIdx -> viewModel.selectDppOption(qIdx, optIdx) },

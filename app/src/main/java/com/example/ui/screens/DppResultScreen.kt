@@ -247,9 +247,9 @@ fun DppResultScreen(
 
             // Question by Question Solutions
             itemsIndexed(dpp.questions) { index, q ->
-                val userChoice = dpp.userAnswers[index]
-                val isCorrect = userChoice == q.correctOptionIndex
-                val isUnattempted = userChoice == null
+                val selectedSet = dpp.selectedOptionsFor(index)
+                val isUnattempted = selectedSet.isEmpty()
+                val isCorrect = !isUnattempted && selectedSet == q.correctOptionIndices
 
                 Card(
                     shape = RoundedCornerShape(18.dp),
@@ -268,15 +268,33 @@ fun DppResultScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = MaterialTheme.colorScheme.surfaceVariant
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = "Q${index + 1} • ${q.topic}",
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                )
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = MaterialTheme.colorScheme.surfaceVariant
+                                ) {
+                                    Text(
+                                        text = "Q${index + 1} • ${q.topic}",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                    )
+                                }
+                                if (q.isMultiSelect) {
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = AmberContainer
+                                    ) {
+                                        Text(
+                                            text = "Objective II",
+                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                            color = Color(0xFF78350F),
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                        )
+                                    }
+                                }
                             }
 
                             Surface(
@@ -312,8 +330,8 @@ fun DppResultScreen(
 
                         // Options Display
                         q.options.forEachIndexed { optIdx, optText ->
-                            val isCorrectAnswer = optIdx == q.correctOptionIndex
-                            val isUserPicked = optIdx == userChoice
+                            val isCorrectAnswer = q.correctOptionIndices.contains(optIdx)
+                            val isUserPicked = selectedSet.contains(optIdx)
                             val optLetter = ('A'.code + optIdx).toChar()
 
                             val optionBorderColor = when {
@@ -349,7 +367,9 @@ fun DppResultScreen(
                                     color = MaterialTheme.colorScheme.onSurface,
                                     modifier = Modifier.weight(1f)
                                 )
-                                if (isCorrectAnswer) {
+                                if (isCorrectAnswer && isUserPicked) {
+                                    Text(text = "✓ Correct Pick", color = EmeraldSuccess, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                                } else if (isCorrectAnswer) {
                                     Text(text = "✓ Correct Option", color = EmeraldSuccess, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))
                                 } else if (isUserPicked) {
                                     Text(text = "✗ Your Answer", color = RoseError, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold))

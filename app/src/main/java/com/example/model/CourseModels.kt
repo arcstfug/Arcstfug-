@@ -14,7 +14,9 @@ data class Question(
     val correctOptionIndex: Int,
     val explanation: String,
     val hint: String,
-    val topic: String
+    val topic: String,
+    val correctOptionIndices: Set<Int> = setOf(correctOptionIndex),
+    val isMultiSelect: Boolean = correctOptionIndices.size > 1
 )
 
 enum class DppStatus {
@@ -34,11 +36,19 @@ data class Dpp(
     val timeLimitMinutes: Int = 15,
     val status: DppStatus = DppStatus.PENDING,
     val userAnswers: Map<Int, Int> = emptyMap(), // questionIndex -> chosenOptionIndex
+    val userMultiAnswers: Map<Int, Set<Int>> = emptyMap(), // questionIndex -> chosenOptionIndices
     val score: Int = 0,
     val timeSpentSeconds: Int = 0,
     val completedAt: Long? = null,
     val sourceBook: String? = null
-)
+) {
+    fun selectedOptionsFor(questionIndex: Int): Set<Int> {
+        val multi = userMultiAnswers[questionIndex]
+        if (!multi.isNullOrEmpty()) return multi
+        val single = userAnswers[questionIndex]
+        return if (single != null) setOf(single) else emptySet()
+    }
+}
 
 data class LectureTimestamp(
     val timeSec: Int,

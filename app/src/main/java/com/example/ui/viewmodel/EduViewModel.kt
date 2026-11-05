@@ -178,6 +178,9 @@ class EduViewModel(
     private val _dppUserAnswers = MutableStateFlow<Map<Int, Int>>(emptyMap())
     val dppUserAnswers = _dppUserAnswers.asStateFlow()
 
+    private val _dppUserMultiAnswers = MutableStateFlow<Map<Int, Set<Int>>>(emptyMap())
+    val dppUserMultiAnswers = _dppUserMultiAnswers.asStateFlow()
+
     private val _dppReviewFlags = MutableStateFlow<Set<Int>>(emptySet())
     val dppReviewFlags = _dppReviewFlags.asStateFlow()
 
@@ -395,15 +398,49 @@ class EduViewModel(
         _activeDppSolvingId.value = dppId
         _dppQuestionIndex.value = 0
         _dppUserAnswers.value = emptyMap()
+        _dppUserMultiAnswers.value = emptyMap()
         _dppReviewFlags.value = emptySet()
         _dppTimerSec.value = dpp.timeLimitMinutes * 60
         startDppTimer()
     }
 
     fun selectDppOption(questionIndex: Int, optionIndex: Int) {
-        val current = _dppUserAnswers.value.toMutableMap()
-        current[questionIndex] = optionIndex
-        _dppUserAnswers.value = current
+        val activeDpp = _activeDppSolvingId.value?.let { repository.findDppById(it) }
+        val question = activeDpp?.questions?.getOrNull(questionIndex)
+        val isMulti = question?.isMultiSelect == true
+
+        if (isMulti) {
+            val currentMulti = _dppUserMultiAnswers.value.toMutableMap()
+            val existingSet = currentMulti[questionIndex]?.toMutableSet() ?: mutableSetOf()
+            if (existingSet.contains(optionIndex)) {
+                existingSet.remove(optionIndex)
+            } else {
+                existingSet.add(optionIndex)
+            }
+            if (existingSet.isEmpty()) {
+                currentMulti.remove(questionIndex)
+            } else {
+                currentMulti[questionIndex] = existingSet.toSortedSet()
+            }
+            _dppUserMultiAnswers.value = currentMulti
+
+            val currentSingle = _dppUserAnswers.value.toMutableMap()
+            val firstSelected = existingSet.minOrNull()
+            if (firstSelected == null) {
+                currentSingle.remove(questionIndex)
+            } else {
+                currentSingle[questionIndex] = firstSelected
+            }
+            _dppUserAnswers.value = currentSingle
+        } else {
+            val currentSingle = _dppUserAnswers.value.toMutableMap()
+            currentSingle[questionIndex] = optionIndex
+            _dppUserAnswers.value = currentSingle
+
+            val currentMulti = _dppUserMultiAnswers.value.toMutableMap()
+            currentMulti[questionIndex] = setOf(optionIndex)
+            _dppUserMultiAnswers.value = currentMulti
+        }
     }
 
     fun toggleReviewFlag(questionIndex: Int) {
@@ -422,7 +459,12 @@ class EduViewModel(
         dppTimerJob?.cancel()
         val timeSpent = ((dpp.timeLimitMinutes * 60) - _dppTimerSec.value).coerceAtLeast(10)
 
-        repository.submitDpp(dppId, _dppUserAnswers.value, timeSpent)
+        repository.submitDpp(
+            dppId = dppId,
+            userAnswers = _dppUserAnswers.value,
+            timeSpentSeconds = timeSpent,
+            userMultiAnswers = _dppUserMultiAnswers.value
+        )
         val updatedDpp = repository.findDppById(dppId)
         val cloud = cloudRepository
         if (cloud != null && !currentUserId.isNullOrBlank() && updatedDpp != null) {

@@ -31,6 +31,7 @@ fun DppSolvingScreen(
     dpp: Dpp,
     currentQuestionIndex: Int,
     userAnswers: Map<Int, Int>,
+    userMultiAnswers: Map<Int, Set<Int>> = emptyMap(),
     reviewFlags: Set<Int>,
     timerSec: Int,
     onSelectOption: (questionIndex: Int, optionIndex: Int) -> Unit,
@@ -207,7 +208,7 @@ fun DppSolvingScreen(
             ) {
                 itemsIndexed(dpp.questions) { index, _ ->
                     val isCurrent = index == currentQuestionIndex
-                    val isAnswered = userAnswers.containsKey(index)
+                    val isAnswered = (userMultiAnswers[index]?.isNotEmpty() == true) || userAnswers.containsKey(index)
                     val isFlagged = reviewFlags.contains(index)
 
                     val bgColor = when {
@@ -255,33 +256,63 @@ fun DppSolvingScreen(
                     contentPadding = PaddingValues(top = 16.dp, bottom = 24.dp)
                 ) {
                     item {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = MaterialTheme.colorScheme.primaryContainer
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = "Question ${currentQuestionIndex + 1} of $totalQuestions",
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                )
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = MaterialTheme.colorScheme.primaryContainer
+                                ) {
+                                    Text(
+                                        text = "Question ${currentQuestionIndex + 1} of $totalQuestions",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                    )
+                                }
+
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = MaterialTheme.colorScheme.surfaceVariant
+                                ) {
+                                    Text(
+                                        text = currentQuestion.topic,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                    )
+                                }
                             }
 
                             Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = MaterialTheme.colorScheme.surfaceVariant
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (currentQuestion.isMultiSelect) AmberContainer else IndigoContainer.copy(alpha = 0.6f),
+                                modifier = Modifier.testTag("question_type_badge")
                             ) {
-                                Text(
-                                    text = currentQuestion.topic,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-                                )
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = if (currentQuestion.isMultiSelect) Icons.Filled.CheckBox else Icons.Filled.RadioButtonChecked,
+                                        contentDescription = null,
+                                        tint = if (currentQuestion.isMultiSelect) Color(0xFF78350F) else IndigoDark,
+                                        modifier = Modifier.size(15.dp)
+                                    )
+                                    Text(
+                                        text = if (currentQuestion.isMultiSelect) {
+                                            "Objective II • Multiple Correct (Select one or more options)"
+                                        } else {
+                                            "Objective I • Single Correct Option"
+                                        },
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = if (currentQuestion.isMultiSelect) Color(0xFF78350F) else IndigoDark
+                                    )
+                                }
                             }
                         }
                     }
@@ -306,8 +337,12 @@ fun DppSolvingScreen(
                     }
 
                     // Options List
+                    val currentSelectedSet = userMultiAnswers[currentQuestionIndex]?.takeIf { it.isNotEmpty() }
+                        ?: userAnswers[currentQuestionIndex]?.let { setOf(it) }
+                        ?: emptySet()
+
                     itemsIndexed(currentQuestion.options) { optionIdx, optionText ->
-                        val isSelected = userAnswers[currentQuestionIndex] == optionIdx
+                        val isSelected = currentSelectedSet.contains(optionIdx)
                         val optionLabel = ('A'.code + optionIdx).toChar()
 
                         Card(
@@ -333,7 +368,7 @@ fun DppSolvingScreen(
                                 Box(
                                     modifier = Modifier
                                         .size(32.dp)
-                                        .clip(CircleShape)
+                                        .clip(if (currentQuestion.isMultiSelect) RoundedCornerShape(8.dp) else CircleShape)
                                         .background(
                                             if (isSelected) IndigoPrimary else MaterialTheme.colorScheme.surfaceVariant
                                         ),
@@ -354,6 +389,15 @@ fun DppSolvingScreen(
                                     color = MaterialTheme.colorScheme.onSurface,
                                     modifier = Modifier.weight(1f)
                                 )
+
+                                if (currentQuestion.isMultiSelect) {
+                                    Icon(
+                                        imageVector = if (isSelected) Icons.Filled.CheckBox else Icons.Filled.CheckBoxOutlineBlank,
+                                        contentDescription = if (isSelected) "Selected" else "Not selected",
+                                        tint = if (isSelected) IndigoPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
                             }
                         }
                     }
@@ -409,7 +453,9 @@ fun DppSolvingScreen(
 
     // Submit Confirmation Dialog
     if (showSubmitDialog) {
-        val answeredCount = userAnswers.size
+        val answeredCount = dpp.questions.indices.count { qIdx ->
+            (userMultiAnswers[qIdx]?.isNotEmpty() == true) || userAnswers.containsKey(qIdx)
+        }
         val unansweredCount = totalQuestions - answeredCount
 
         AlertDialog(

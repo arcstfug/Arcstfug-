@@ -117,7 +117,12 @@ class EduRepository {
         }
     }
 
-    fun submitDpp(dppId: String, userAnswers: Map<Int, Int>, timeSpentSeconds: Int) {
+    fun submitDpp(
+        dppId: String,
+        userAnswers: Map<Int, Int>,
+        timeSpentSeconds: Int,
+        userMultiAnswers: Map<Int, Set<Int>> = emptyMap()
+    ) {
         var correctCount = 0
         var totalCount = 0
 
@@ -132,12 +137,16 @@ class EduRepository {
                                         if (dpp.id == dppId) {
                                             totalCount = dpp.questions.size
                                             correctCount = dpp.questions.mapIndexed { index, q ->
-                                                if (userAnswers[index] == q.correctOptionIndex) 1 else 0
+                                                val chosenSet = userMultiAnswers[index]?.takeIf { it.isNotEmpty() }
+                                                    ?: userAnswers[index]?.let { setOf(it) }
+                                                    ?: emptySet()
+                                                if (chosenSet == q.correctOptionIndices) 1 else 0
                                             }.sum()
 
                                             dpp.copy(
                                                 status = DppStatus.COMPLETED,
                                                 userAnswers = userAnswers,
+                                                userMultiAnswers = userMultiAnswers,
                                                 score = correctCount,
                                                 timeSpentSeconds = timeSpentSeconds,
                                                 completedAt = System.currentTimeMillis()
@@ -175,6 +184,7 @@ class EduRepository {
                                             dpp.copy(
                                                 status = DppStatus.PENDING,
                                                 userAnswers = emptyMap(),
+                                                userMultiAnswers = emptyMap(),
                                                 score = 0,
                                                 timeSpentSeconds = 0,
                                                 completedAt = null

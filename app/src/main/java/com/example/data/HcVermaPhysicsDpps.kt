@@ -26,7 +26,9 @@ import com.example.model.*
  * Chapter 17: Light Waves (Wave Optics, Huygens' Principle, YDSE, Polarization)
  * Chapter 18: Geometrical Optics (Mirrors, Lenses, Refraction at Spherical Surfaces, Prisms)
  * Chapter 19: Optical Instruments (Microscopes, Telescopes, Defects of Vision)
- * Chapter 20: Dispersion, Spectra & Photometry (Dispersive Power, Luminous Flux, Illuminance)
+ * Chapter 20: Dispersion and Spectra (Dispersive Power, Achromatic Combinations, Spectra)
+ * Chapter 21: Speed of Light (Fizeau, Foucault & Michelson Methods, Relativistic Invariance)
+ * Chapter 22: Photometry (Luminous Flux, Intensity, Illuminance, Lambert's Cosine Law)
  */
 object HcVermaPhysicsDpps {
 
@@ -53,7 +55,9 @@ object HcVermaPhysicsDpps {
             createChapter17(),
             createChapter18(),
             createChapter19(),
-            createChapter20()
+            createChapter20(),
+            createChapter21(),
+            createChapter22()
         )
     }
 
@@ -160,6 +164,96 @@ object HcVermaPhysicsDpps {
                             explanation = "The argument of an exponent must be dimensionless: [αt] = 1 => [α] = [T⁻¹].\nAlso, [x] = [v₀ / α] => [L] = [v₀] / [T⁻¹] => [v₀] = [L][T⁻¹] = [L T⁻¹].",
                             hint = "Exponential powers e^(...) must be dimensionless.",
                             topic = "Principle of Homogeneity"
+                        ),
+                        Question(
+                            id = "hcv_ch1_obj1_q2",
+                            questionText = "A physical quantity is measured and the result is expressed as nu where u is the unit used and n is the numerical value. If the result is expressed in various units then:",
+                            options = listOf(
+                                "n ∝ size of u",
+                                "n ∝ u²",
+                                "n ∝ √u",
+                                "n ∝ 1/u"
+                            ),
+                            correctOptionIndex = 3,
+                            explanation = "For any given physical quantity Q, the magnitude remains constant regardless of the choice of units: Q = n₁u₁ = n₂u₂ = constant.\nTherefore, the numerical value n is inversely proportional to the size of the unit u: n ∝ 1/u.",
+                            hint = "The product n · u is invariant for a fixed physical measurement.",
+                            topic = "Objective I • Numerical Value & Units"
+                        ),
+                        Question(
+                            id = "hcv_ch1_obj1_q3",
+                            questionText = "A unitless quantity:",
+                            options = listOf(
+                                "never has a nonzero dimension",
+                                "always has a nonzero dimension",
+                                "may have a nonzero dimension",
+                                "does not exist"
+                            ),
+                            correctOptionIndex = 0,
+                            explanation = "If a quantity has a nonzero dimension in any base quantity (such as Mᵃ Lᵇ Tᶜ where at least one exponent is non-zero), it must have a corresponding unit formed by those base units. Therefore, a quantity without any unit (unitless) never has a nonzero dimension.",
+                            hint = "Any quantity with non-zero dimensions automatically possesses base units.",
+                            topic = "Objective I • Unitless & Dimensionless Quantities"
+                        ),
+                        Question(
+                            id = "hcv_ch1_obj1_q4",
+                            questionText = "∫ dx / √(2ax − x²) = aⁿ sin⁻¹ [x/a − 1]. The value of n is:",
+                            options = listOf(
+                                "0",
+                                "–1",
+                                "1",
+                                "none of these"
+                            ),
+                            correctOptionIndex = 0,
+                            explanation = "By dimensional homogeneity, in the expression 2ax - x², [a] must equal [x] = [L].\nOn the LHS: [dx] = [L] and [√(2ax - x²)] = √([L²]) = [L].\nThus, the ratio [dx / √(2ax - x²)] = [L] / [L] = [L⁰] (dimensionless).\nOn the RHS, sin⁻¹[x/a - 1] is an angle (dimensionless), so [aⁿ] = [Lⁿ] must also be dimensionless [L⁰].\nHence, n = 0.",
+                            hint = "Compare the dimensions of the numerator dx and denominator √(2ax - x²).",
+                            topic = "Objective I • Dimensional Analysis of Integrals"
+                        ),
+                        Question(
+                            id = "hcv_ch1_obj2_q1",
+                            questionText = "[Objective II] The dimensions ML⁻¹T⁻² may correspond to:",
+                            options = listOf(
+                                "work done by a force",
+                                "linear momentum",
+                                "pressure",
+                                "energy per unit volume"
+                            ),
+                            correctOptionIndex = 2,
+                            correctOptionIndices = setOf(2, 3),
+                            isMultiSelect = true,
+                            explanation = "• Work done = Force × displacement => [M L T⁻²][L] = [M L² T⁻²].\n• Linear momentum = mass × velocity => [M L T⁻¹].\n• Pressure = Force / Area = [M L T⁻²] / [L²] = [M L⁻¹ T⁻²].\n• Energy per unit volume = [M L² T⁻²] / [L³] = [M L⁻¹ T⁻²].\nThus, both (c) pressure and (d) energy per unit volume have dimensions ML⁻¹T⁻².",
+                            hint = "Check both Force/Area and Energy/Volume.",
+                            topic = "Objective II • Multiple Correct Dimensions"
+                        ),
+                        Question(
+                            id = "hcv_ch1_obj2_q2",
+                            questionText = "[Objective II] Choose the correct statement(s):",
+                            options = listOf(
+                                "A dimensionally correct equation may be correct.",
+                                "A dimensionally correct equation may be incorrect.",
+                                "A dimensionally incorrect equation may be correct.",
+                                "A dimensionally incorrect equation may be incorrect."
+                            ),
+                            correctOptionIndex = 0,
+                            correctOptionIndices = setOf(0, 1, 3),
+                            isMultiSelect = true,
+                            explanation = "• A dimensionally correct equation may be physically correct (e.g., s = ut + ½at²) or physically incorrect due to wrong dimensionless constants (e.g., s = ut + 5at²). So (a) and (b) are true.\n• A dimensionally incorrect equation can NEVER be physically correct (so (c) is false and (d) is true).",
+                            hint = "Dimensional consistency is necessary but not sufficient for physical correctness.",
+                            topic = "Objective II • Principle of Homogeneity"
+                        ),
+                        Question(
+                            id = "hcv_ch1_obj2_q3",
+                            questionText = "[Objective II] Choose the correct statement(s) regarding base and derived quantities:",
+                            options = listOf(
+                                "All quantities may be represented dimensionally in terms of the base quantities.",
+                                "A base quantity cannot be represented dimensionally in terms of the rest of the base quantities.",
+                                "The dimension of a base quantity in other base quantities is always zero.",
+                                "The dimension of a derived quantity is never zero in any base quantity."
+                            ),
+                            correctOptionIndex = 0,
+                            correctOptionIndices = setOf(0, 1, 2),
+                            isMultiSelect = true,
+                            explanation = "By definition, base (fundamental) quantities form a complete and mutually independent basis:\n• Every physical quantity can be expressed in terms of the base quantities (a is true).\n• Base quantities are independent, so no base quantity can be expressed in terms of the remaining base quantities (b is true), meaning its exponent in other base quantities is always zero (c is true).\n• A derived quantity CAN have zero dimension in one or more base quantities (e.g., velocity [M⁰ L¹ T⁻¹] has zero dimension in mass M), so (d) is false.",
+                            hint = "Base quantities are mutually independent; derived quantities like speed do not depend on every base quantity.",
+                            topic = "Objective II • Base & Derived Quantities"
                         )
                     )
                 )
@@ -255,6 +349,80 @@ object HcVermaPhysicsDpps {
                             explanation = "Velocity v = dx/dt = 6t² - 18t + 12.\nAcceleration a = dv/dt = 12t - 18.\nSetting a = 0 => 12t - 18 = 0 => 12t = 18 => t = 1.5 s.",
                             hint = "Find the second derivative of position with respect to time.",
                             topic = "Calculus in Kinematics"
+                        ),
+                        Question(
+                            id = "hcv_ch2_obj1_q1",
+                            questionText = "A vector is not changed if:",
+                            options = listOf(
+                                "it is rotated through an arbitrary angle",
+                                "it is multiplied by an arbitrary scalar",
+                                "it is cross multiplied by a unit vector",
+                                "it is slid parallel to itself"
+                            ),
+                            correctOptionIndex = 3,
+                            explanation = "A free vector is completely specified by its magnitude and direction. Sliding a vector parallel to itself preserves both its magnitude and its direction, leaving the vector unchanged.",
+                            hint = "Parallel translation preserves both length and orientation.",
+                            topic = "Objective I • Properties of Vectors"
+                        ),
+                        Question(
+                            id = "hcv_ch2_obj1_q2",
+                            questionText = "Which of the sets given below may represent the magnitudes of three vectors adding to zero?",
+                            options = listOf(
+                                "2, 4, 8",
+                                "4, 8, 16",
+                                "1, 2, 1",
+                                "0.5, 1, 2"
+                            ),
+                            correctOptionIndex = 2,
+                            explanation = "Three vectors can add to zero only if their magnitudes satisfy the triangle inequality (the sum of any two magnitudes must be greater than or equal to the third).\nFor (1, 2, 1): 1 + 1 = 2 ≥ 2 (collinear vectors where two unit vectors oppose a vector of magnitude 2).\nIn (2, 4, 8): 2 + 4 < 8; in (4, 8, 16): 4 + 8 < 16; in (0.5, 1, 2): 0.5 + 1 < 2.",
+                            hint = "Check the triangle inequality: A + B ≥ C.",
+                            topic = "Objective I • Zero Resultant of Three Vectors"
+                        ),
+                        Question(
+                            id = "hcv_ch2_obj1_q3",
+                            questionText = "The radius of a circle is stated as 2.12 cm. Its area should be written as:",
+                            options = listOf(
+                                "14 cm²",
+                                "14.1 cm²",
+                                "14.11 cm²",
+                                "14.1124 cm²"
+                            ),
+                            correctOptionIndex = 1,
+                            explanation = "The given radius r = 2.12 cm has 3 significant figures.\nArea A = π r² = 3.14159 × (2.12)² = 14.1195... cm².\nBy significant figure rules for multiplication, the result must be rounded to 3 significant figures, which gives 14.1 cm².",
+                            hint = "Retain as many significant figures in the product as in the measurement r = 2.12 cm (3 sig figs).",
+                            topic = "Objective I • Significant Figures"
+                        ),
+                        Question(
+                            id = "hcv_ch2_obj2_q1",
+                            questionText = "[Objective II] A situation may be described by using different sets of coordinate axes having different orientations. Which of the following do not depend on the orientation of the axes?",
+                            options = listOf(
+                                "the value of a scalar",
+                                "component of a vector",
+                                "a vector",
+                                "the magnitude of a vector"
+                            ),
+                            correctOptionIndex = 0,
+                            correctOptionIndices = setOf(0, 2, 3),
+                            isMultiSelect = true,
+                            explanation = "Rotating the coordinate axes changes the projections (components A_x, A_y, A_z) of a vector along the axes. However, a scalar quantity, the geometric vector itself (its physical magnitude and direction in space), and the magnitude of the vector remain completely invariant under rotation of axes.",
+                            hint = "Only individual coordinate projections (components) change when axes are rotated.",
+                            topic = "Objective II • Coordinate Frame Invariance"
+                        ),
+                        Question(
+                            id = "hcv_ch2_obj2_q2",
+                            questionText = "[Objective II] Let C = A + B.",
+                            options = listOf(
+                                "|C| is always greater than |A|",
+                                "It is possible to have |C| < |A| and |C| < |B|",
+                                "C is always equal to A + B",
+                                "C is never equal to A + B"
+                            ),
+                            correctOptionIndex = 1,
+                            correctOptionIndices = setOf(1),
+                            isMultiSelect = true,
+                            explanation = "If two vectors A and B are oriented at an obtuse angle (for example, two vectors of equal magnitude A = B at 150° or 180°), the magnitude of their resultant |C| = √(A² + B² + 2AB cos θ) can be smaller than both |A| and |B|. Thus, only (b) is universally valid.",
+                            hint = "Consider two equal vectors pointing in nearly opposite directions.",
+                            topic = "Objective II • Vector Addition Bounds"
                         )
                     )
                 )
@@ -360,6 +528,36 @@ object HcVermaPhysicsDpps {
                             explanation = "For the shortest path, the swimmer's net resultant velocity must be directed straight across the river (due north). Therefore, the horizontal component of his velocity must balance the river current:\nv_swimmer sin θ = v_river => 10 sin θ = 5 => sin θ = 1/2 => θ = 30° upstream (west of north).",
                             hint = "Component opposing river flow must cancel river speed: v_m sin θ = v_r.",
                             topic = "River Swimmer Relative Motion"
+                        ),
+                        Question(
+                            id = "hcv_ch3_obj1_q1",
+                            questionText = "In the arrangement shown in figure (3-Q3), the ends P and Q of an inextensible string move downwards with uniform speed u. Pulleys A and B are fixed. The mass M moves upwards with a speed:",
+                            options = listOf(
+                                "2u cos θ",
+                                "u / cos θ",
+                                "2u / cos θ",
+                                "u cos θ"
+                            ),
+                            correctOptionIndex = 1,
+                            explanation = "Let 2d be the horizontal separation between fixed pulleys A and B, y be the vertical depth of mass M below line AB, and l be the length of each inclined string segment from M to A (or B).\nFrom geometry: l² = d² + y².\nDifferentiating with respect to time t:\n2l (dl/dt) = 0 + 2y (dy/dt) => (-dl/dt) = (y / l)(-dy/dt).\nHere, (-dl/dt) = u (rate at which string is pulled over each pulley), (-dy/dt) = v_M (upward speed of mass M), and y / l = cos θ.\nTherefore, u = v_M cos θ => v_M = u / cos θ.",
+                            hint = "Resolve the upward velocity v_M of the block along the string direction: v_M cos θ = u.",
+                            topic = "Objective I • String Constraint Kinematics"
+                        ),
+                        Question(
+                            id = "hcv_ch3_obj2_q1",
+                            questionText = "[Objective II] Consider the motion of the tip of the minute hand of a clock. In one hour:",
+                            options = listOf(
+                                "the displacement is zero",
+                                "the distance covered is zero",
+                                "the average speed is zero",
+                                "the average velocity is zero"
+                            ),
+                            correctOptionIndex = 0,
+                            correctOptionIndices = setOf(0, 3),
+                            isMultiSelect = true,
+                            explanation = "In exactly one hour, the minute hand completes one full revolution and returns to its exact starting position:\n• Net displacement Δr = 0 (so (a) is true).\n• Average velocity = Δr / Δt = 0 (so (d) is true).\n• Distance covered is 2πR ≠ 0, so average speed = 2πR / T ≠ 0 ((b) and (c) are false).",
+                            hint = "After 60 minutes, initial and final positions of the minute hand coincide.",
+                            topic = "Objective II • Displacement vs Distance"
                         )
                     )
                 )
@@ -446,6 +644,54 @@ object HcVermaPhysicsDpps {
                             explanation = "F_g = G m_e² / r² and F_e = (1 / 4πε₀) e² / r².\nRatio F_g / F_e = (G m_e²) / (k e²) ≈ (6.67 × 10⁻¹¹ × (9.1 × 10⁻³¹)²) / (9 × 10⁹ × (1.6 × 10⁻¹⁹)²)\n≈ 2.4 × 10⁻⁴³, which is of order 10⁻⁴³.",
                             hint = "Gravitational interaction between subatomic particles is unimaginably weaker than electrostatic force.",
                             topic = "Relative Strength of Fundamental Forces"
+                        ),
+                        Question(
+                            id = "hcv_ch4_obj2_q1",
+                            questionText = "[Objective II] A neutron exerts a force on a proton which is:",
+                            options = listOf(
+                                "gravitational",
+                                "electromagnetic",
+                                "nuclear",
+                                "weak"
+                            ),
+                            correctOptionIndex = 0,
+                            correctOptionIndices = setOf(0, 2),
+                            isMultiSelect = true,
+                            explanation = "A neutron is electrically neutral, so there is no gross electromagnetic Coulomb force between a neutron and a proton. However, both have mass (so they exert gravitational force) and both are nucleons/hadrons (so they exert strong nuclear force on each other at nuclear separations).",
+                            hint = "Neutrons have mass and baryon number, but zero net electric charge.",
+                            topic = "Objective II • Fundamental Interactions"
+                        ),
+                        Question(
+                            id = "hcv_ch4_obj2_q2",
+                            questionText = "[Objective II] A proton exerts a force on a proton which is:",
+                            options = listOf(
+                                "gravitational",
+                                "electromagnetic",
+                                "nuclear",
+                                "weak"
+                            ),
+                            correctOptionIndex = 0,
+                            correctOptionIndices = setOf(0, 1, 2),
+                            isMultiSelect = true,
+                            explanation = "Two protons have mass (gravitational attraction), positive electric charge (electromagnetic interaction), and are nucleons (strong nuclear attraction at short range). Thus (a), (b), and (c) are correct.",
+                            hint = "Protons possess mass, electric charge, and strong nuclear interaction.",
+                            topic = "Objective II • Proton-Proton Forces"
+                        ),
+                        Question(
+                            id = "hcv_ch4_obj2_q3",
+                            questionText = "[Objective II] Mark the correct statements:",
+                            options = listOf(
+                                "The nuclear force between two protons is always greater than the electromagnetic force between them.",
+                                "The electromagnetic force between two protons is always greater than the gravitational force between them.",
+                                "The gravitational force between two protons may be greater than the nuclear force between them.",
+                                "Electromagnetic force between two protons may be greater than the nuclear force acting between them."
+                            ),
+                            correctOptionIndex = 1,
+                            correctOptionIndices = setOf(1, 2, 3),
+                            isMultiSelect = true,
+                            explanation = "• Both electromagnetic and gravitational forces obey the inverse-square law (∝ 1/r²), and for two protons F_e / F_g ≈ 10³⁶ > 1 at all distances, so (b) is always true.\n• The strong nuclear force is extremely short-ranged (~1 fm). For separations larger than a few femtometers (e.g. 1 Å or 1 cm), the nuclear force drops to zero, so both electromagnetic and gravitational forces exceed the nuclear force at large distances. Hence (c) and (d) are true, while (a) is false.",
+                            hint = "Nuclear force vanishes outside the nucleus (> 10⁻¹⁴ m), whereas 1/r² forces have infinite range.",
+                            topic = "Objective II • Range & Strength of Forces"
                         )
                     )
                 )
@@ -618,6 +864,34 @@ object HcVermaPhysicsDpps {
                             explanation = "The maximum acceleration the top block 'm' can experience without slipping is provided entirely by friction between the blocks:\nf_max = μ m g => a_max = f_max / m = μ g.\nFor both blocks (total mass M + m) to move together with this maximum acceleration:\nF_max = (M + m) a_max = μ(M + m)g.",
                             hint = "Find maximum acceleration of upper block, then apply F = (M + m) a.",
                             topic = "Two-Block Systems"
+                        ),
+                        Question(
+                            id = "hcv_ch6_obj1_q1",
+                            questionText = "In a situation the contact force by a rough horizontal surface on a body placed on it has constant magnitude. If the angle between this force and the vertical is decreased, the frictional force between the surface and the body will:",
+                            options = listOf(
+                                "increase",
+                                "decrease",
+                                "remain the same",
+                                "may increase or decrease"
+                            ),
+                            correctOptionIndex = 1,
+                            explanation = "Let R be the magnitude of the total contact force exerted by the surface on the body, making an angle θ with the vertical (normal).\nThe vertical component is the normal force N = R cos θ, and the horizontal component is the frictional force f = R sin θ.\nSince R is constant and θ decreases (for 0 ≤ θ < 90°), sin θ decreases, so the frictional force f = R sin θ decreases.",
+                            hint = "Frictional force is the horizontal component of contact force: f = R sin θ.",
+                            topic = "Objective I • Contact Force & Friction Angle"
+                        ),
+                        Question(
+                            id = "hcv_ch6_obj1_q2",
+                            questionText = "While walking on ice, one should take small steps to avoid slipping. This is because smaller steps ensure:",
+                            options = listOf(
+                                "larger friction",
+                                "smaller friction",
+                                "larger normal force",
+                                "smaller normal force"
+                            ),
+                            correctOptionIndex = 1,
+                            explanation = "When a person pushes the ground at an angle θ with the vertical while taking a step, the required horizontal static friction is f = N tan θ. Taking small steps keeps the leg nearly vertical (small θ), which requires a smaller frictional force (f = N tan θ) that does not exceed the very small limiting friction μ_s N available on slippery ice.",
+                            hint = "Small steps mean a smaller push angle θ from the vertical, requiring smaller static friction.",
+                            topic = "Objective I • Mechanics of Walking on Ice"
                         )
                     )
                 )
@@ -699,6 +973,80 @@ object HcVermaPhysicsDpps {
                             explanation = "Resolving normal reaction:\nN cos θ = mg (vertical equilibrium)\nN sin θ = m v² / R (providing centripetal force)\nDividing: tan θ = v² / (R g) => v = √(R g tan θ).",
                             hint = "Resolve the normal reaction into horizontal and vertical components.",
                             topic = "Banking of Tracks"
+                        ),
+                        Question(
+                            id = "hcv_ch7_obj1_q1",
+                            questionText = "When a particle moves in a circle with a uniform speed:",
+                            options = listOf(
+                                "its velocity and acceleration are both constant",
+                                "its velocity is constant but the acceleration changes",
+                                "its acceleration is constant but the velocity changes",
+                                "its velocity and acceleration both change"
+                            ),
+                            correctOptionIndex = 3,
+                            explanation = "Velocity (tangent to the circle) and centripetal acceleration (directed radially inward towards the centre) are both vector quantities. Even though their magnitudes (v and v²/r) remain constant in uniform circular motion, their directions change continuously at every instant. Hence both velocity and acceleration change.",
+                            hint = "Remember velocity and acceleration are vectors; changing direction changes the vector.",
+                            topic = "Objective I • Uniform Circular Motion Vectors"
+                        ),
+                        Question(
+                            id = "hcv_ch7_obj1_q2",
+                            questionText = "Two cars having masses m₁ and m₂ move in circles of radii r₁ and r₂ respectively. If they complete the circle in equal time, the ratio of their angular speeds ω₁ / ω₂ is:",
+                            options = listOf(
+                                "m₁ / m₂",
+                                "r₁ / r₂",
+                                "m₁ r₁ / (m₂ r₂)",
+                                "1"
+                            ),
+                            correctOptionIndex = 3,
+                            explanation = "Angular speed is given by ω = 2π / T, where T is the time period to complete one revolution.\nSince both cars complete the circle in equal time (T₁ = T₂), their angular speeds are equal: ω₁ / ω₂ = (2π / T₁) / (2π / T₂) = 1.",
+                            hint = "Angular speed ω = 2π / T depends only on the time period T.",
+                            topic = "Objective I • Angular Speed Ratio"
+                        ),
+                        Question(
+                            id = "hcv_ch7_obj1_q3",
+                            questionText = "Let θ denote the angular displacement of a simple pendulum oscillating in a vertical plane. If the mass of the bob is m, the tension in the string is mg cos θ:",
+                            options = listOf(
+                                "always",
+                                "never",
+                                "at the extreme positions",
+                                "at the mean position"
+                            ),
+                            correctOptionIndex = 2,
+                            explanation = "Along the radial direction of the pendulum string of length L:\nT - mg cos θ = m v² / L => T = mg cos θ + m v² / L.\nAt the extreme positions, the instantaneous speed v = 0, so the centripetal term m v² / L vanishes and T = mg cos θ.",
+                            hint = "Write the radial equation T - mg cos θ = m v² / L and check where v = 0.",
+                            topic = "Objective I • Tension in Simple Pendulum"
+                        ),
+                        Question(
+                            id = "hcv_ch7_obj2_q1",
+                            questionText = "[Objective II] An object follows a curved path. The following quantities may remain constant during the motion:",
+                            options = listOf(
+                                "speed",
+                                "velocity",
+                                "acceleration",
+                                "magnitude of acceleration"
+                            ),
+                            correctOptionIndex = 0,
+                            correctOptionIndices = setOf(0, 2, 3),
+                            isMultiSelect = true,
+                            explanation = "• In uniform circular motion (a curved path), the speed (a) and the magnitude of acceleration v²/R (d) remain constant.\n• In projectile motion under uniform gravity (a parabolic curved path), the acceleration vector a = g downward (c) and its magnitude (d) remain constant.\n• However, velocity (b) can NEVER remain constant along a curved path because its direction tangent to the path must change.",
+                            hint = "Compare uniform circular motion and parabolic projectile motion.",
+                            topic = "Objective II • Motion Along a Curved Path"
+                        ),
+                        Question(
+                            id = "hcv_ch7_obj2_q2",
+                            questionText = "[Objective II] Assume that the earth goes round the sun in a circular orbit with a constant speed of 30 km/s.",
+                            options = listOf(
+                                "The average velocity of the earth from 1st Jan, 90 to 30th June, 90 is zero.",
+                                "The average acceleration during the above period is 60 km/s².",
+                                "The average speed from 1st Jan, 90 to 31st Dec, 90 is zero.",
+                                "The instantaneous acceleration of the earth points towards the sun."
+                            ),
+                            correctOptionIndex = 3,
+                            correctOptionIndices = setOf(3),
+                            isMultiSelect = true,
+                            explanation = "• From 1st Jan to 30th June (half a year), the Earth moves to the diametrically opposite point of its orbit, so displacement is 2R ≠ 0 and average velocity ≠ 0 ((a) is false).\n• Change in velocity over half an orbit is Δv = 60 km/s, so average acceleration is Δv / Δt = (60 km/s) / (π × 10⁷ s), NOT 60 km/s² ((b) is false).\n• Average speed over a full year is 30 km/s ≠ 0 ((c) is false).\n• In uniform circular motion around the Sun, the instantaneous centripetal acceleration always points radially towards the centre (the Sun), so (d) is true.",
+                            hint = "In uniform circular orbit, instantaneous acceleration is purely centripetal.",
+                            topic = "Objective II • Orbital Kinematics"
                         )
                     )
                 )
@@ -962,6 +1310,86 @@ object HcVermaPhysicsDpps {
                             explanation = "No external torque acts on the system about the rotation axis, so angular momentum L = I ω is conserved.\nWhen he pulls his arms in, his moment of inertia I decreases. Therefore, ω = L / I increases.\nRotational kinetic energy is K = L² / (2I). As I decreases while L is constant, K increases! (The extra kinetic energy comes from the biological muscular work done by the child pulling his arms in).",
                             hint = "L is conserved, so K = L² / (2I) increases as I decreases.",
                             topic = "Conservation of Angular Momentum"
+                        ),
+                        Question(
+                            id = "hcv_ch10_obj2_q1",
+                            questionText = "[Objective II] The axis of rotation of a purely rotating body:",
+                            options = listOf(
+                                "must pass through the centre of mass",
+                                "may pass through the centre of mass",
+                                "must pass through a particle of the body",
+                                "may pass through a particle of the body"
+                            ),
+                            correctOptionIndex = 1,
+                            correctOptionIndices = setOf(1, 3),
+                            isMultiSelect = true,
+                            explanation = "A rigid body can be hinged to rotate purely about any fixed axis—whether passing through its centre of mass or not, and whether passing through material particles of the body or completely outside the body (such as a ring rotating about its symmetry axis or an external axis). Therefore, the axis of rotation MAY pass through the centre of mass (b) and MAY pass through a particle of the body (d).",
+                            hint = "A hinged axis can be chosen inside or outside the rigid body.",
+                            topic = "Objective II • Axis of Pure Rotation"
+                        ),
+                        Question(
+                            id = "hcv_ch10_obj2_q2",
+                            questionText = "[Objective II] Consider the following two equations: (A) L = I ω  (B) dL/dt = Γ. In noninertial frames:",
+                            options = listOf(
+                                "both A and B are true",
+                                "A is true but B is false",
+                                "B is true but A is false",
+                                "both A and B are false"
+                            ),
+                            correctOptionIndex = 1,
+                            correctOptionIndices = setOf(1),
+                            isMultiSelect = true,
+                            explanation = "Equation (A) L = I ω is a kinematic/definitional relation between angular momentum and angular velocity about the symmetry/rotation axis, so it holds in any frame.\nEquation (B) dL/dt = Γ_ext is derived from Newton's second law; in a non-inertial frame, one must also include the torque due to pseudo forces unless taken about the centre of mass. Hence in general non-inertial frames, A is true but B is false.",
+                            hint = "L = Iω is kinematic, whereas dL/dt = Γ relies on Newton's second law.",
+                            topic = "Objective II • Rotational Dynamics in Non-Inertial Frames"
+                        ),
+                        Question(
+                            id = "hcv_ch10_obj2_q3",
+                            questionText = "[Objective II] A particle moves on a straight line with a uniform velocity. Its angular momentum:",
+                            options = listOf(
+                                "is always zero",
+                                "is zero about a point on the straight line",
+                                "is not zero about a point away from the straight line",
+                                "about any given point remains constant"
+                            ),
+                            correctOptionIndex = 1,
+                            correctOptionIndices = setOf(1, 2, 3),
+                            isMultiSelect = true,
+                            explanation = "Angular momentum of a particle about a point O is L = r × m v, with magnitude L = m v r_⊥, where r_⊥ is the perpendicular distance of O from the line of motion.\n• If O lies on the line, r_⊥ = 0 => L = 0 (b is true).\n• If O is away from the line, r_⊥ ≠ 0 => L ≠ 0 (c is true, a is false).\n• Since v is constant in magnitude and direction and r_⊥ is fixed for any chosen point O, L remains constant in both magnitude and direction (d is true).",
+                            hint = "Use L = r × p = m v r_⊥ where r_⊥ is perpendicular distance from the line.",
+                            topic = "Objective II • Angular Momentum of Rectilinear Motion"
+                        ),
+                        Question(
+                            id = "hcv_ch10_obj2_q4",
+                            questionText = "[Objective II] If there is no external force acting on a nonrigid body, which of the following quantities must remain constant?",
+                            options = listOf(
+                                "angular momentum",
+                                "linear momentum",
+                                "kinetic energy",
+                                "moment of inertia"
+                            ),
+                            correctOptionIndex = 0,
+                            correctOptionIndices = setOf(0, 1),
+                            isMultiSelect = true,
+                            explanation = "When no external force acts on a system (F_ext = 0 and τ_ext = 0), internal forces occur in equal and opposite central pairs, so both total linear momentum P and total angular momentum L must remain conserved.\nHowever, because the body is non-rigid, internal parts can move relative to each other (e.g., an ice skater pulling arms in or an internal explosion), changing both its moment of inertia I and kinetic energy K.",
+                            hint = "Internal forces cannot change total linear or angular momentum, but can change K and I in a deformable system.",
+                            topic = "Objective II • Conservation Laws for Non-Rigid Systems"
+                        ),
+                        Question(
+                            id = "hcv_ch10_obj2_q5",
+                            questionText = "[Objective II] Let I_A and I_B be moments of inertia of a body about two axes A and B respectively. The axis A passes through the centre of mass of the body but B does not.",
+                            options = listOf(
+                                "I_A < I_B",
+                                "If I_A < I_B, the axes are parallel",
+                                "If the axes are parallel, I_A < I_B",
+                                "If the axes are not parallel, I_A ≥ I_B"
+                            ),
+                            correctOptionIndex = 2,
+                            correctOptionIndices = setOf(2),
+                            isMultiSelect = true,
+                            explanation = "By the Parallel Axis Theorem, if axes A and B are parallel and A passes through the centre of mass at distance d > 0 from B, then I_B = I_A + M d², which guarantees I_A < I_B.\nIf the axes are not parallel (for example, for a thin rod of length L, axis A through CM perpendicular to the rod has I_A = ML²/12, while an axis B along a line inclined or nearly parallel to the rod can have a smaller or larger moment of inertia), no universal inequality holds unless they are parallel. Thus only (c) is always true.",
+                            hint = "Parallel axis theorem I_B = I_cm + Md² requires the two axes to be parallel.",
+                            topic = "Objective II • Parallel Axis Theorem Conditions"
                         )
                     )
                 )
@@ -1053,6 +1481,54 @@ object HcVermaPhysicsDpps {
                             explanation = "Orbital velocity v_o = √(G M / R).\nKinetic energy K = (1/2) m v_o² = G M m / (2R).\nPotential energy U = -G M m / R.\nTotal energy E = K + U = G M m / (2R) - G M m / R = -G M m / (2R).",
                             hint = "Remember total energy of a bound orbit is negative of its kinetic energy: E = -K = U/2.",
                             topic = "Satellite Energy Relations"
+                        ),
+                        Question(
+                            id = "hcv_ch11_obj2_q1",
+                            questionText = "[Objective II] Let V and E denote the gravitational potential and gravitational field at a point. It is possible to have:",
+                            options = listOf(
+                                "V = 0 and E = 0",
+                                "V = 0 and E ≠ 0",
+                                "V ≠ 0 and E = 0",
+                                "V ≠ 0 and E ≠ 0"
+                            ),
+                            correctOptionIndex = 0,
+                            correctOptionIndices = setOf(0, 1, 2, 3),
+                            isMultiSelect = true,
+                            explanation = "• At infinity (far from all masses), V = 0 and E = 0 (a is possible).\n• Since reference point of potential is arbitrary, we can choose V = 0 at any point where E ≠ 0 (b is possible).\n• At the midpoint between two equal masses (or inside a spherical shell), E = 0 while V = -2GM/r ≠ 0 (c is possible).\n• At a general point near a mass with standard reference V(∞) = 0, V ≠ 0 and E ≠ 0 (d is possible).\nHence all four combinations (a), (b), (c), and (d) are possible.",
+                            hint = "Potential depends on reference choice and E = -∇V depends on spatial gradient.",
+                            topic = "Objective II • Gravitational Potential vs Field"
+                        ),
+                        Question(
+                            id = "hcv_ch11_obj2_q2",
+                            questionText = "[Objective II] Inside a uniform spherical shell:",
+                            options = listOf(
+                                "the gravitational potential is zero",
+                                "the gravitational field is zero",
+                                "the gravitational potential is same everywhere",
+                                "the gravitational field is same everywhere"
+                            ),
+                            correctOptionIndex = 1,
+                            correctOptionIndices = setOf(1, 2, 3),
+                            isMultiSelect = true,
+                            explanation = "Inside a hollow uniform spherical shell of mass M and radius R:\n• The net gravitational field is E = 0 at every interior point (so (b) is true and (d) is also true since E = 0 everywhere).\n• Because E = -dV/dr = 0, the gravitational potential V is constant everywhere inside the shell and equals the surface value V = -GM/R ≠ 0 (so (c) is true, while (a) is false).",
+                            hint = "Inside a uniform spherical shell, E = 0 everywhere and V = -GM/R = constant.",
+                            topic = "Objective II • Uniform Spherical Shell"
+                        ),
+                        Question(
+                            id = "hcv_ch11_obj2_q3",
+                            questionText = "[Objective II] A uniform spherical shell gradually shrinks maintaining its shape. The gravitational potential at the centre:",
+                            options = listOf(
+                                "increases",
+                                "decreases",
+                                "remains constant",
+                                "oscillates"
+                            ),
+                            correctOptionIndex = 1,
+                            correctOptionIndices = setOf(1),
+                            isMultiSelect = true,
+                            explanation = "The gravitational potential at the centre of a uniform spherical shell of mass M and radius R is V = -GM / R.\nAs the shell shrinks, its radius R decreases, so the magnitude GM / R increases. Because of the negative sign, V = -GM / R becomes more negative, which means the gravitational potential decreases.",
+                            hint = "Pay attention to the negative sign in V = -GM / R as R decreases.",
+                            topic = "Objective II • Potential of Shrinking Shell"
                         )
                     )
                 )
@@ -1134,6 +1610,34 @@ object HcVermaPhysicsDpps {
                             explanation = "The spring constant k is inversely proportional to its natural length L: k ∝ 1/L => k · L = constant.\nWhen the spring is cut into two halves, each half has length L' = L/2.\nTherefore, the new spring constant is k' = k (L / L') = k (L / (L/2)) = 2k.",
                             hint = "Spring constant is inversely proportional to length (k · L = const).",
                             topic = "Cutting of Springs"
+                        ),
+                        Question(
+                            id = "hcv_ch12_obj1_q1",
+                            questionText = "A student says that he had applied a force F = −k√x on a particle and the particle moved in simple harmonic motion. He refuses to tell whether k is a constant or not. Assume that he has worked only with positive x and no other force acted on the particle:",
+                            options = listOf(
+                                "As x increases k increases",
+                                "As x increases k decreases",
+                                "As x increases k remains constant",
+                                "The motion cannot be simple harmonic"
+                            ),
+                            correctOptionIndex = 0,
+                            explanation = "For simple harmonic motion, the restoring force must obey F = -m ω² x.\nEquating this with the student's expression F = -k √x (for x > 0):\n-k √x = -m ω² x => k = m ω² √x.\nSince m ω² is a positive constant, k is proportional to √x. Therefore, as x increases, k increases.",
+                            hint = "Equate F = -k√x with the SHM condition F = -mω²x and solve for k(x).",
+                            topic = "Objective I • Restoring Force Condition for SHM"
+                        ),
+                        Question(
+                            id = "hcv_ch12_obj1_q2",
+                            questionText = "The time period of a particle in simple harmonic motion is equal to the time between consecutive appearances of the particle at a particular point in its motion. This point is:",
+                            options = listOf(
+                                "the mean position",
+                                "an extreme position",
+                                "between the mean position and the positive extreme",
+                                "between the mean position and the negative extreme"
+                            ),
+                            correctOptionIndex = 1,
+                            explanation = "During one complete time period T, a particle in SHM passes through the mean position (and any intermediate interior point) TWICE (once going right, once going left), so consecutive appearances at interior points are separated by less than T (specifically T/2 for the mean position). However, the particle visits a given extreme position (+A or -A) only ONCE per full cycle, so consecutive appearances at an extreme position are separated by the full time period T.",
+                            hint = "Find the point on the oscillation path that is visited only once per complete cycle.",
+                            topic = "Objective I • Time Period & Phase in SHM"
                         )
                     )
                 )
@@ -1392,6 +1896,54 @@ object HcVermaPhysicsDpps {
                             explanation = "In a standing wave, nodes occur where amplitude is permanently zero. Consecutive nodes are separated by half a wavelength (λ / 2). The distance between a node and adjacent antinode is λ / 4.",
                             hint = "Two nodes span half a cycle of the standing wave.",
                             topic = "Standing Waves on Strings"
+                        ),
+                        Question(
+                            id = "hcv_ch15_obj2_q1",
+                            questionText = "[Objective II] A mechanical wave propagates in a medium along the X-axis. The particles of the medium:",
+                            options = listOf(
+                                "must move on the X-axis",
+                                "must move on the Y-axis",
+                                "may move on the X-axis",
+                                "may move on the Y-axis"
+                            ),
+                            correctOptionIndex = 2,
+                            correctOptionIndices = setOf(2, 3),
+                            isMultiSelect = true,
+                            explanation = "A mechanical wave propagating along the X-axis can be longitudinal (particles oscillate parallel to wave propagation, i.e., along the X-axis) or transverse (particles oscillate perpendicular to wave propagation, such as along the Y-axis or Z-axis). Thus particles may move on the X-axis (c) and may move on the Y-axis (d).",
+                            hint = "Consider both longitudinal and transverse mechanical waves.",
+                            topic = "Objective II • Particle Motion in Mechanical Waves"
+                        ),
+                        Question(
+                            id = "hcv_ch15_obj2_q2",
+                            questionText = "[Objective II] A transverse wave travels along the Z-axis. The particles of the medium must move:",
+                            options = listOf(
+                                "along the Z-axis",
+                                "along the X-axis",
+                                "along the Y-axis",
+                                "in the X-Y plane"
+                            ),
+                            correctOptionIndex = 3,
+                            correctOptionIndices = setOf(3),
+                            isMultiSelect = true,
+                            explanation = "In a transverse wave, the particles of the medium oscillate in a direction perpendicular to the direction of wave propagation (the Z-axis). Any direction perpendicular to the Z-axis lies in the X-Y plane.",
+                            hint = "Perpendicular to the Z-axis means lying in the X-Y plane.",
+                            topic = "Objective II • Transverse Wave Polarization Plane"
+                        ),
+                        Question(
+                            id = "hcv_ch15_obj2_q3",
+                            questionText = "[Objective II] Longitudinal waves cannot:",
+                            options = listOf(
+                                "have a unique wavelength",
+                                "transmit energy",
+                                "have a unique wave velocity",
+                                "be polarized"
+                            ),
+                            correctOptionIndex = 3,
+                            correctOptionIndices = setOf(3),
+                            isMultiSelect = true,
+                            explanation = "Polarization requires selecting a specific orientation of oscillation in the plane perpendicular to the direction of wave propagation. Because particle oscillations in a longitudinal wave are already parallel to the direction of propagation, there is no transverse asymmetry, so longitudinal waves cannot be polarized.",
+                            hint = "Only transverse waves exhibit polarization.",
+                            topic = "Objective II • Longitudinal vs Transverse Waves"
                         )
                     )
                 )
@@ -1473,6 +2025,80 @@ object HcVermaPhysicsDpps {
                             explanation = "By Doppler formula for source moving towards stationary observer (v_o = 0):\nf' = f · (v / (v - v_s))\nf' = 1000 × (340 / (340 - 34)) = 1000 × (340 / 306) = 1000 × (10 / 9) ≈ 1111.1 Hz.",
                             hint = "Use f' = f [v / (v - v_s)].",
                             topic = "Doppler Effect"
+                        ),
+                        Question(
+                            id = "hcv_ch16_obj1_q1",
+                            questionText = "Consider the following statements about sound passing through a gas:\n(A) The pressure of the gas at a point oscillates in time.\n(B) The position of a small layer of the gas oscillates in time.",
+                            options = listOf(
+                                "Both A and B are correct",
+                                "A is correct but B is wrong",
+                                "B is correct but A is wrong",
+                                "Both A and B are wrong"
+                            ),
+                            correctOptionIndex = 0,
+                            explanation = "A sound wave in a gas is a longitudinal mechanical wave. It can be described either as a displacement wave s = s₀ sin(kx - ωt) (where small layers of gas oscillate back and forth in time) or as a pressure wave ΔP = ΔP₀ cos(kx - ωt) (where pressure and density at any point oscillate in time). Thus both A and B are correct.",
+                            hint = "Sound in a gas involves both displacement oscillations and pressure oscillations.",
+                            topic = "Objective I • Displacement & Pressure Waves"
+                        ),
+                        Question(
+                            id = "hcv_ch16_obj1_q2",
+                            questionText = "When we clap our hands, the sound produced is best described by (here p denotes the change in pressure from the equilibrium value):",
+                            options = listOf(
+                                "p = p₀ sin(kx − ωt)",
+                                "p = p₀ sin kx cos ωt",
+                                "p = p₀ cos kx sin ωt",
+                                "p = Σ p₀ₙ sin(kₙx − ωₙt)"
+                            ),
+                            correctOptionIndex = 3,
+                            explanation = "A hand clap is an acoustic pulse (non-harmonic wave of short duration) rather than a pure single-frequency sine wave or standing wave. By Fourier's theorem, any such complex pulse is a superposition of many harmonic waves of different frequencies and wavelengths: p = Σ p₀ₙ sin(kₙx − ωₙt).",
+                            hint = "A clap is an impulsive non-periodic sound made of a superposition of many frequencies.",
+                            topic = "Objective I • Fourier Superposition of Sound Pulse"
+                        ),
+                        Question(
+                            id = "hcv_ch16_obj1_q3",
+                            questionText = "The fundamental frequency of a vibrating organ pipe is 200 Hz.",
+                            options = listOf(
+                                "The first overtone is 400 Hz.",
+                                "The first overtone may be 400 Hz.",
+                                "The first overtone may be 600 Hz.",
+                                "600 Hz is an overtone."
+                            ),
+                            correctOptionIndex = 3,
+                            correctOptionIndices = setOf(1, 2, 3),
+                            isMultiSelect = true,
+                            explanation = "• If the organ pipe is open at both ends, its harmonics are multiples of f₀ = 200 Hz: 200 Hz, 400 Hz (1st overtone), 600 Hz (2nd overtone).\n• If the organ pipe is closed at one end, only odd harmonics exist: 200 Hz, 600 Hz (1st overtone), 1000 Hz.\nTherefore, the first overtone MAY be 400 Hz (b), MAY be 600 Hz (c), and in BOTH cases 600 Hz is definitely an overtone (d).",
+                            hint = "Check harmonics for both open organ pipes (n f₀) and closed organ pipes ((2n-1) f₀).",
+                            topic = "Objective I & II • Organ Pipe Overtones"
+                        ),
+                        Question(
+                            id = "hcv_ch16_obj1_q4",
+                            questionText = "A source of sound moves towards an observer.",
+                            options = listOf(
+                                "The frequency of the source is increased.",
+                                "The velocity of sound in the medium is increased.",
+                                "The wavelength of sound in the medium towards the observer is decreased.",
+                                "The amplitude of vibration of the particles is increased."
+                            ),
+                            correctOptionIndex = 2,
+                            explanation = "When a source moves towards an observer with speed v_s, the physical oscillation frequency f₀ of the source and the wave speed v in the medium remain unchanged. However, successive wave crests are emitted closer together in the forward direction, reducing the wavelength in the medium to λ' = (v - v_s) / f₀.",
+                            hint = "Source motion crowds wavefronts together ahead of the source, decreasing wavelength λ'.",
+                            topic = "Objective I • Physical Mechanism of Doppler Shift"
+                        ),
+                        Question(
+                            id = "hcv_ch16_obj1_q5",
+                            questionText = "A listener is at rest with respect to the source of sound. A wind starts blowing along the line joining the source and the observer. Which of the following quantities do not change?",
+                            options = listOf(
+                                "Frequency",
+                                "Velocity of sound",
+                                "Wavelength",
+                                "Time period"
+                            ),
+                            correctOptionIndex = 0,
+                            correctOptionIndices = setOf(0, 3),
+                            isMultiSelect = true,
+                            explanation = "When wind blows with speed w along the line joining a stationary source and stationary observer, the effective speed of sound becomes v + w, and the wavelength becomes λ' = (v + w)/f. However, the apparent frequency heard by the listener is f' = ((v + w)/(v + w)) f = f, and the time period T = 1/f also remains unchanged.",
+                            hint = "When there is no relative motion between source and observer, steady wind does not alter frequency or time period.",
+                            topic = "Objective I & II • Effect of Wind on Sound"
                         )
                     )
                 )
@@ -1564,6 +2190,92 @@ object HcVermaPhysicsDpps {
                             explanation = "Introducing a transparent plate introduces an additional optical path difference of (μ - 1)t in that beam.\nTo compensate and maintain zero optical path difference for the central bright fringe, the rays must shift towards the slit where the sheet is placed.\nFringe shift is Δy = ((μ - 1) t D) / d towards that slit.",
                             hint = "Light takes more optical time in the medium; pattern shifts toward that slit.",
                             topic = "Fringe Shift by Transparent Sheet"
+                        ),
+                        Question(
+                            id = "hcv_ch17_obj1_q1",
+                            questionText = "Light is:",
+                            options = listOf(
+                                "a wave phenomenon",
+                                "a particle phenomenon",
+                                "both particle and wave phenomenon",
+                                "neither particle nor wave phenomenon"
+                            ),
+                            correctOptionIndex = 2,
+                            explanation = "Light exhibits wave-particle duality: phenomena like interference, diffraction, and polarization demonstrate its wave nature, while the photoelectric effect and Compton scattering demonstrate its particle (photon) nature. Thus light is both a particle and a wave phenomenon.",
+                            hint = "Recall wave-particle duality of radiation.",
+                            topic = "Objective I • Dual Nature of Light"
+                        ),
+                        Question(
+                            id = "hcv_ch17_obj1_q2",
+                            questionText = "The speed of light depends:",
+                            options = listOf(
+                                "on elasticity of the medium only",
+                                "on inertia of the medium only",
+                                "on elasticity as well as inertia",
+                                "neither on elasticity nor on inertia"
+                            ),
+                            correctOptionIndex = 3,
+                            explanation = "Light is an electromagnetic wave, not a mechanical wave. Its propagation speed v = 1 / √(με) depends on the electric permittivity ε and magnetic permeability μ of the medium, and depends neither on mechanical elasticity nor on mass inertia.",
+                            hint = "Light is a non-mechanical electromagnetic wave.",
+                            topic = "Objective I • Electromagnetic Wave Speed"
+                        ),
+                        Question(
+                            id = "hcv_ch17_obj1_q3",
+                            questionText = "The equation of a light wave is written as y = A sin(kx − ωt). Here, y represents:",
+                            options = listOf(
+                                "displacement of ether particles",
+                                "pressure in the medium",
+                                "density of the medium",
+                                "electric field"
+                            ),
+                            correctOptionIndex = 3,
+                            explanation = "In a light wave (electromagnetic wave), there are no oscillating material particles or pressure/density variations. The oscillating wave variable y = A sin(kx - ωt) represents the oscillating electric field vector E (or magnetic field B).",
+                            hint = "Light consists of oscillating electric and magnetic fields.",
+                            topic = "Objective I • Light Wave Equation"
+                        ),
+                        Question(
+                            id = "hcv_ch17_obj1_q4",
+                            questionText = "Which of the following properties shows that light is a transverse wave?",
+                            options = listOf(
+                                "Reflection",
+                                "Interference",
+                                "Diffraction",
+                                "Polarization"
+                            ),
+                            correctOptionIndex = 3,
+                            explanation = "Reflection, interference, and diffraction are exhibited by both longitudinal (e.g., sound) and transverse waves. Polarization is unique to transverse waves because it requires restricting the orientation of vibrations in the plane perpendicular to wave propagation.",
+                            hint = "Which optical phenomenon cannot occur in longitudinal sound waves?",
+                            topic = "Objective I • Transverse Nature of Light"
+                        ),
+                        Question(
+                            id = "hcv_ch17_obj1_q5",
+                            questionText = "Huygens' principle of secondary wavelets may be used to:",
+                            options = listOf(
+                                "find the velocity of light in vacuum",
+                                "explain the particle's behaviour of light",
+                                "find the new position of a wavefront",
+                                "explain Snell's law"
+                            ),
+                            correctOptionIndex = 2,
+                            correctOptionIndices = setOf(2, 3),
+                            isMultiSelect = true,
+                            explanation = "Huygens' principle is a geometrical construction that determines the new position of a wavefront at a later instant from its current position (c), and using this wavefront construction across an interface directly proves the laws of reflection and Snell's law of refraction (d).",
+                            hint = "Huygens' construction locates future wavefronts and proves Snell's law.",
+                            topic = "Objective I & II • Huygens' Principle"
+                        ),
+                        Question(
+                            id = "hcv_ch17_obj1_q6",
+                            questionText = "Three observers A, B and C measure the speed of light coming from a source to be vA, vB and vC. The observer A moves towards the source and C moves away from the source at the same speed. The observer B stays stationary. The surrounding space is vacuum everywhere.",
+                            options = listOf(
+                                "vA > vB > vC",
+                                "vA < vB < vC",
+                                "vA = vB = vC",
+                                "vB = (vA + vC) / 2"
+                            ),
+                            correctOptionIndex = 2,
+                            explanation = "By Einstein's Special Theory of Relativity (Second Postulate), the speed of light in vacuum is a universal invariant c ≈ 3 × 10⁸ m/s in all inertial frames of reference, independent of the relative motion of the source or the observer. Therefore, vA = vB = vC.",
+                            hint = "The speed of light in vacuum is invariant for all observers.",
+                            topic = "Objective I • Invariance of Speed of Light"
                         )
                     )
                 )
@@ -1650,6 +2362,86 @@ object HcVermaPhysicsDpps {
                             explanation = "For an equilateral prism, angle of prism A = 60°.\nμ = sin((A + δ_m) / 2) / sin(A / 2)\n√3 = sin((60° + δ_m) / 2) / sin(30°)\n√3 = sin((60° + δ_m) / 2) / 0.5 => sin((60° + δ_m) / 2) = √3 / 2.\nTherefore, (60° + δ_m) / 2 = 60° => 60° + δ_m = 120° => δ_m = 60°.",
                             hint = "Use μ = sin((A + δ_m)/2) / sin(A/2) with A = 60°.",
                             topic = "Prism Minimum Deviation"
+                        ),
+                        Question(
+                            id = "hcv_ch18_obj2_q1",
+                            questionText = "[Objective II] If the light moving in a straight line bends by a small but fixed angle, it may be a case of:",
+                            options = listOf(
+                                "reflection",
+                                "refraction",
+                                "diffraction",
+                                "dispersion"
+                            ),
+                            correctOptionIndex = 0,
+                            correctOptionIndices = setOf(0, 1, 2, 3),
+                            isMultiSelect = true,
+                            explanation = "A light beam can be deviated by a small fixed angle by grazing reflection from a mirror (a), refraction through a thin prism/interface (b), diffraction at an obstacle/grating (c), or dispersion of a specific wavelength component through a dispersive medium (d). Hence all four (a), (b), (c), and (d) are possible.",
+                            hint = "Reflection, refraction, diffraction, and dispersion can all bend a ray by a small angle.",
+                            topic = "Objective II • Deviation of Light Rays"
+                        ),
+                        Question(
+                            id = "hcv_ch18_obj2_q2",
+                            questionText = "[Objective II] Mark the correct options:",
+                            options = listOf(
+                                "If the incident rays are converging, we have a real object.",
+                                "If the final rays are converging, we have a real image.",
+                                "The image of a virtual object is called a virtual image.",
+                                "If the image is virtual, the corresponding object is called a virtual object."
+                            ),
+                            correctOptionIndex = 1,
+                            correctOptionIndices = setOf(1),
+                            isMultiSelect = true,
+                            explanation = "• Incident rays that are diverging correspond to a real object, whereas converging incident rays correspond to a virtual object (so (a) is false).\n• Reflected or refracted (final) rays that actually converge to a point form a real image (so (b) is true).\n• A virtual object can readily form a real image (e.g., converging rays hitting a convex lens or plane mirror), so (c) and (d) are false.",
+                            hint = "Real vs virtual image is determined solely by whether outgoing rays converge or diverge.",
+                            topic = "Objective II • Real & Virtual Objects and Images"
+                        ),
+                        Question(
+                            id = "hcv_ch18_obj2_q3",
+                            questionText = "[Objective II] Which of the following (referred to a spherical mirror) do (does) not depend on whether the rays are paraxial or not?",
+                            options = listOf(
+                                "Pole",
+                                "Focus",
+                                "Radius of curvature",
+                                "Principal axis"
+                            ),
+                            correctOptionIndex = 0,
+                            correctOptionIndices = setOf(0, 2, 3),
+                            isMultiSelect = true,
+                            explanation = "The pole (geometric centre of the mirror aperture), centre/radius of curvature (of the sphere of which the mirror is a part), and principal axis (line joining pole and centre of curvature) are purely geometric properties of the spherical surface and do not depend on the rays.\nHowever, a sharp point Focus (f = R/2) is defined only for paraxial rays; marginal rays suffer from spherical aberration.",
+                            hint = "Only the focal point relies on the paraxial approximation cos θ ≈ 1.",
+                            topic = "Objective II • Paraxial Approximation & Mirror Geometry"
+                        ),
+                        Question(
+                            id = "hcv_ch18_obj2_q4",
+                            questionText = "[Objective II] The image of an extended object, placed perpendicular to the principal axis of a mirror, will be erect if:",
+                            options = listOf(
+                                "the object is real but the image is virtual",
+                                "the object is virtual but the image is real",
+                                "both, the object and the image are real",
+                                "both, the object and the image are virtual"
+                            ),
+                            correctOptionIndex = 0,
+                            correctOptionIndices = setOf(0, 1),
+                            isMultiSelect = true,
+                            explanation = "For a spherical mirror, lateral magnification is m = -v / u.\nFor an erect image, m > 0, which requires v and u to have OPPOSITE algebraic signs.\nSince real lies in front of the mirror (negative sign) and virtual lies behind the mirror (positive sign), u and v have opposite signs if and only if one is real and the other is virtual. Hence (a) and (b) are correct.",
+                            hint = "In mirror formula m = -v/u, m > 0 requires u and v to have opposite signs.",
+                            topic = "Objective II • Lateral Magnification of Spherical Mirrors"
+                        ),
+                        Question(
+                            id = "hcv_ch18_obj2_q5",
+                            questionText = "[Objective II] A convex lens forms a real image of a point object placed on its principal axis. If the upper half of the lens is painted black:",
+                            options = listOf(
+                                "the image will be shifted downward",
+                                "the image will be shifted upward",
+                                "the image will not be shifted",
+                                "the intensity of the image will decrease"
+                            ),
+                            correctOptionIndex = 2,
+                            correctOptionIndices = setOf(2, 3),
+                            isMultiSelect = true,
+                            explanation = "Every part of a lens refracts rays from the object to the exact same focal image point. Blocking the upper half of the lens does not change the focal length or position of the image (c is true), but since half of the light-gathering aperture is blocked, the intensity (brightness) of the image decreases (d is true).",
+                            hint = "Rays through the lower half still converge at the same image position, but with less light energy.",
+                            topic = "Objective II • Aperture Blocking in Lenses"
                         )
                     )
                 )
@@ -1741,6 +2533,92 @@ object HcVermaPhysicsDpps {
                             explanation = "For myopic (nearsighted) eye viewing an object at infinity (u = -∞), image should be formed at the far point (v = -1.5 m).\n1/f = 1/v - 1/u = -1/1.5 - 0 = -1 / 1.5 = -2/3 m⁻¹.\nPower P = 1 / f = -2/3 ≈ -0.67 Dioptres (concave lens).",
                             hint = "P = 1/f with u = -∞ and v = -1.5 m.",
                             topic = "Defects of Vision (Myopia)"
+                        ),
+                        Question(
+                            id = "hcv_ch19_obj1_q1",
+                            questionText = "The size of an object as perceived by an eye depends primarily on:",
+                            options = listOf(
+                                "actual size of the object",
+                                "distance of the object from the eye",
+                                "aperture of the pupil",
+                                "size of the image formed on the retina"
+                            ),
+                            correctOptionIndex = 3,
+                            explanation = "The apparent size of an object perceived by the human eye is governed by the visual angle θ subtended by the object at the eye, which directly determines the size of the real image formed on the retina.",
+                            hint = "Visual angle directly controls the height of the image on the retina.",
+                            topic = "Objective I • Visual Angle & Retinal Image"
+                        ),
+                        Question(
+                            id = "hcv_ch19_obj1_q2",
+                            questionText = "The muscles of a normal eye are least strained when the eye is focused on an object:",
+                            options = listOf(
+                                "far away from the eye",
+                                "very close to the eye",
+                                "at a distance of about 25 cm from the eye",
+                                "at a distance of about 1 m from the eye"
+                            ),
+                            correctOptionIndex = 0,
+                            explanation = "When a normal eye views a distant object (at infinity), the ciliary muscles are completely relaxed and the eye-lens has its maximum focal length (least converging power). Focusing on closer objects requires contracting the ciliary muscles (accommodation).",
+                            hint = "Relaxed eye corresponds to parallel rays from infinity.",
+                            topic = "Objective I • Eye Accommodation"
+                        ),
+                        Question(
+                            id = "hcv_ch19_obj1_q3",
+                            questionText = "A normal eye is not able to see objects closer than 25 cm because:",
+                            options = listOf(
+                                "the focal length of the eye is 25 cm",
+                                "the distance of the retina from the eye-lens is 25 cm",
+                                "the eye is not able to decrease the distance between the eye-lens and the retina beyond a limit",
+                                "the eye is not able to decrease the focal length beyond a limit"
+                            ),
+                            correctOptionIndex = 3,
+                            explanation = "As an object is brought closer to the eye, the ciliary muscles compress the crystalline lens to decrease its focal length so the image stays on the retina (1/f = 1/v - 1/u). Below the near point (D ≈ 25 cm), the ciliary muscles reach their maximum contraction limit and cannot decrease the focal length any further.",
+                            hint = "Ciliary muscles cannot increase lens curvature (decrease focal length) beyond the near-point limit.",
+                            topic = "Objective I • Least Distance of Distinct Vision"
+                        ),
+                        Question(
+                            id = "hcv_ch19_obj1_q4",
+                            questionText = "When objects at different distances are seen by the eye, which of the following remain constant?",
+                            options = listOf(
+                                "The focal length of the eye-lens.",
+                                "The object-distance from the eye-lens.",
+                                "The radii of curvature of the eye-lens.",
+                                "The image-distance from the eye-lens."
+                            ),
+                            correctOptionIndex = 3,
+                            explanation = "In the human eye, the retina is at a fixed anatomical distance behind the eye-lens. For clear vision at various object distances u, the eye-lens changes its radii of curvature and focal length f so that the image-distance v from the eye-lens to the retina remains constant.",
+                            hint = "The distance between the eye-lens and the retina is fixed by the size of the eyeball.",
+                            topic = "Objective I • Image Distance in the Human Eye"
+                        ),
+                        Question(
+                            id = "hcv_ch19_obj1_q5",
+                            questionText = "A person A can clearly see objects between 25 cm and 200 cm. Which of the following may represent the range of clear vision for a person B having muscles stronger than A, but all other parameters of eye identical to that of A?",
+                            options = listOf(
+                                "25 cm to 200 cm",
+                                "18 cm to 200 cm",
+                                "25 cm to 300 cm",
+                                "18 cm to 300 cm"
+                            ),
+                            correctOptionIndex = 1,
+                            explanation = "The far point (200 cm) corresponds to completely relaxed ciliary muscles, which depends only on the passive geometry of the eyeball (identical for A and B). The near point corresponds to maximum contraction of the ciliary muscles. Stronger ciliary muscles allow B to compress the eye-lens more, reducing the minimum focal length and bringing the near point closer (from 25 cm down to 18 cm) while the far point remains 200 cm.",
+                            hint = "Stronger ciliary muscles only improve maximum accommodation (near point), not the relaxed far point.",
+                            topic = "Objective I • Ciliary Muscle Strength & Vision Range"
+                        ),
+                        Question(
+                            id = "hcv_ch19_obj2_q1",
+                            questionText = "[Objective II] If the focal length of the objective lens is increased then:",
+                            options = listOf(
+                                "magnifying power of microscope will increase",
+                                "magnifying power of microscope will decrease",
+                                "magnifying power of telescope will increase",
+                                "magnifying power of telescope will decrease"
+                            ),
+                            correctOptionIndex = 1,
+                            correctOptionIndices = setOf(1, 2),
+                            isMultiSelect = true,
+                            explanation = "• For a compound microscope, magnifying power is m ≈ (L / f_o)(D / f_e), which is inversely proportional to f_o. Thus increasing f_o decreases the magnifying power of a microscope (b).\n• For an astronomical telescope, magnifying power is m = f_o / f_e, which is directly proportional to f_o. Thus increasing f_o increases the magnifying power of a telescope (c).",
+                            hint = "Compare m_microscope ∝ 1/f_o and m_telescope ∝ f_o.",
+                            topic = "Objective II • Microscope vs Telescope Objective"
                         )
                     )
                 )
@@ -1749,13 +2627,13 @@ object HcVermaPhysicsDpps {
     }
 
     // -------------------------------------------------------------
-    // CHAPTER 20: Dispersion, Spectra & Photometry
+    // CHAPTER 20: Dispersion and Spectra
     // -------------------------------------------------------------
     private fun createChapter20(): Chapter {
         return Chapter(
             id = "phy_hcv_ch20",
             subject = SubjectType.PHYSICS,
-            title = "Chapter 20: Dispersion, Spectra & Photometry",
+            title = "Chapter 20: Dispersion and Spectra",
             order = 20,
             lectures = listOf(
                 Lecture(
@@ -1763,23 +2641,23 @@ object HcVermaPhysicsDpps {
                     courseId = "c_arjuna_jee",
                     subject = SubjectType.PHYSICS,
                     chapterId = "phy_hcv_ch20",
-                    chapterTitle = "Chapter 20: Dispersion, Spectra & Photometry",
-                    title = "Lec 01: Dispersive Power, Chromatic Aberration & Photometry",
+                    chapterTitle = "Chapter 20: Dispersion and Spectra",
+                    title = "Lec 01: Dispersive Power, Achromatic Prisms & Spectra",
                     lectureNumber = 1,
                     instructor = "Prof. H.C. Verma Masterclass",
                     durationMinutes = 50,
                     progressSec = 0,
                     notesSummary = listOf(
+                        "Cauchy's dispersion formula: μ(λ) = A + B/λ²; violet bends more than red (μ_v > μ_r).",
                         "Angular dispersion θ = δ_v - δ_r = (μ_v - μ_r) A.",
                         "Dispersive power ω = (μ_v - μ_r) / (μ_y - 1).",
-                        "Condition for dispersion without average deviation and deviation without dispersion.",
-                        "Inverse square law of illuminance: E = I cos θ / r²; Luminous flux unit is lumen (lm)."
+                        "Combinations of thin prisms can achieve dispersion without average deviation or deviation without dispersion."
                     ),
                     timestamps = listOf(
                         LectureTimestamp(0, "00:00", "Angular Dispersion & Dispersive Power"),
-                        LectureTimestamp(720, "12:00", "Achromatic Combination of Prisms"),
-                        LectureTimestamp(1800, "30:00", "Luminous Flux, Intensity & Illuminance"),
-                        LectureTimestamp(2520, "42:00", "Lambert's Cosine Law & Photometer")
+                        LectureTimestamp(720, "12:00", "Deviation Without Dispersion (Achromatic Prisms)"),
+                        LectureTimestamp(1800, "30:00", "Dispersion Without Average Deviation (Direct Vision Spectroscope)"),
+                        LectureTimestamp(2520, "42:00", "Continuous, Line & Band Emission/Absorption Spectra")
                     ),
                     dppId = "dpp_hcv_ch20"
                 )
@@ -1788,9 +2666,9 @@ object HcVermaPhysicsDpps {
                 Dpp(
                     id = "dpp_hcv_ch20",
                     number = 20,
-                    title = "DPP 20: Dispersion, Prisms & Photometry",
+                    title = "DPP 20: Dispersion, Prisms & Spectra",
                     subject = SubjectType.PHYSICS,
-                    chapterTitle = "Chapter 20: Dispersion, Spectra & Photometry",
+                    chapterTitle = "Chapter 20: Dispersion and Spectra",
                     courseId = "c_arjuna_jee",
                     timeLimitMinutes = 20,
                     status = DppStatus.PENDING,
@@ -1806,15 +2684,6 @@ object HcVermaPhysicsDpps {
                             topic = "Dispersive Power"
                         ),
                         Question(
-                            id = "hcv_ch20_q2",
-                            questionText = "An electric lamp hangs 3 m directly above the center of a horizontal table. If the lamp is raised by 1 m, the illuminance at the point directly below the lamp will decrease by:",
-                            options = listOf("43.75%", "25%", "50%", "36%"),
-                            correctOptionIndex = 0,
-                            explanation = "By inverse square law for normal incidence (cos θ = 1): E = I / r².\nInitially at r₁ = 3 m: E₁ = I / 3² = I / 9.\nWhen raised by 1 m, r₂ = 4 m: E₂ = I / 4² = I / 16.\nRatio E₂ / E₁ = 9 / 16 = 0.5625 = 56.25% of original.\nPercentage decrease = (1 - 0.5625) × 100% = 43.75%.",
-                            hint = "Illuminance follows the inverse-square law E ∝ 1 / r².",
-                            topic = "Photometry Inverse Square Law"
-                        ),
-                        Question(
                             id = "hcv_ch20_q3",
                             questionText = "To produce deviation without dispersion using two thin prisms of crown (ω₁, A₁) and flint glass (ω₂, A₂), the required condition is:",
                             options = listOf(
@@ -1827,6 +2696,273 @@ object HcVermaPhysicsDpps {
                             explanation = "For no net dispersion, net angular dispersion must be zero:\nθ_net = θ₁ + θ₂ = 0\n(μ_v - μ_r) A + (μ'_v - μ'_r) A' = 0.",
                             hint = "Set net angular dispersion θ₁ + θ₂ = 0.",
                             topic = "Achromatic Combinations"
+                        ),
+                        Question(
+                            id = "hcv_ch20_obj2_q1",
+                            questionText = "[Objective II] A narrow beam of white light goes through a slab having parallel faces:",
+                            options = listOf(
+                                "The light never splits in different colours.",
+                                "The emergent beam is white.",
+                                "The light inside the slab is split into different colours.",
+                                "The light inside the slab is white."
+                            ),
+                            correctOptionIndex = 1,
+                            correctOptionIndices = setOf(1, 2),
+                            isMultiSelect = true,
+                            explanation = "When a narrow beam of white light enters a parallel-sided glass slab at an oblique angle, different wavelengths refract at slightly different angles (since μ_v > μ_r), so the light inside the slab splits into different colours (c is true). At the second parallel face, all constituent rays emerge parallel to the original incident beam and overlap to form a white emergent beam (b is true).",
+                            hint = "A parallel slab produces lateral shift without angular dispersion of the emergent beam.",
+                            topic = "Objective II • Dispersion in Parallel Glass Slab"
+                        ),
+                        Question(
+                            id = "hcv_ch20_obj2_q2",
+                            questionText = "[Objective II] By properly combining two prisms made of different materials, it is possible to:",
+                            options = listOf(
+                                "have dispersion without average deviation",
+                                "have deviation without dispersion",
+                                "have both dispersion and average deviation",
+                                "have neither dispersion nor average deviation"
+                            ),
+                            correctOptionIndex = 0,
+                            correctOptionIndices = setOf(0, 1, 2),
+                            isMultiSelect = true,
+                            explanation = "Since two different prism materials have different dispersive powers (ω₁ ≠ ω₂):\n• Setting δ₁ + δ₂ = 0 gives non-zero net dispersion θ = δ₁(ω₁ - ω₂) ≠ 0 (dispersion without average deviation, (a) is true).\n• Setting θ₁ + θ₂ = 0 gives non-zero net deviation δ = δ₁(1 - ω₁/ω₂) ≠ 0 (deviation without dispersion, (b) is true).\n• Choosing general apex angles gives both dispersion and average deviation ((c) is true).\n• Because ω₁ ≠ ω₂, δ₁ + δ₂ = 0 and ω₁δ₁ + ω₂δ₂ = 0 cannot both be zero simultaneously for non-zero prism angles, so (d) is false.",
+                            hint = "Two prisms of different materials have ω₁ ≠ ω₂, so δ_net and θ_net cannot vanish simultaneously.",
+                            topic = "Objective II • Two-Prism Combinations"
+                        )
+                    )
+                )
+            )
+        )
+    }
+
+    // -------------------------------------------------------------
+    // CHAPTER 21: Speed of Light
+    // -------------------------------------------------------------
+    private fun createChapter21(): Chapter {
+        return Chapter(
+            id = "phy_hcv_ch21",
+            subject = SubjectType.PHYSICS,
+            title = "Chapter 21: Speed of Light",
+            order = 21,
+            lectures = listOf(
+                Lecture(
+                    id = "lec_hcv_ch21",
+                    courseId = "c_arjuna_jee",
+                    subject = SubjectType.PHYSICS,
+                    chapterId = "phy_hcv_ch21",
+                    chapterTitle = "Chapter 21: Speed of Light",
+                    title = "Lec 01: Fizeau, Foucault & Michelson Methods for Speed of Light",
+                    lectureNumber = 1,
+                    instructor = "Prof. H.C. Verma Masterclass",
+                    durationMinutes = 45,
+                    progressSec = 0,
+                    notesSummary = listOf(
+                        "Defined exact speed of light in vacuum: c = 299,792,458 m/s in all inertial frames.",
+                        "Fizeau toothed-wheel method: c = 4 D n N (where D is distance, n is revolutions/sec, N is teeth count).",
+                        "Foucault rotating-mirror method works over laboratory distances and can measure speed of light in water (showing v_water < c).",
+                        "Michelson octagonal rotating-mirror method: c = 16 D n."
+                    ),
+                    timestamps = listOf(
+                        LectureTimestamp(0, "00:00", "Roemer's Astronomical Determination"),
+                        LectureTimestamp(600, "10:00", "Fizeau's Toothed Wheel Experiment"),
+                        LectureTimestamp(1500, "25:00", "Foucault's Rotating Mirror in Air & Water"),
+                        LectureTimestamp(2100, "35:00", "Michelson's Precision Octagonal Mirror")
+                    ),
+                    dppId = "dpp_hcv_ch21"
+                )
+            ),
+            dpps = listOf(
+                Dpp(
+                    id = "dpp_hcv_ch21",
+                    number = 21,
+                    title = "DPP 21: Measurement & Invariance of Speed of Light",
+                    subject = SubjectType.PHYSICS,
+                    chapterTitle = "Chapter 21: Speed of Light",
+                    courseId = "c_arjuna_jee",
+                    timeLimitMinutes = 20,
+                    status = DppStatus.PENDING,
+                    sourceBook = HCV_BOOK_NAME,
+                    questions = listOf(
+                        Question(
+                            id = "hcv_ch21_obj1_q1",
+                            questionText = "Light passes through a closed cylindrical tube containing a gas. If the gas is gradually pumped out, the speed of light inside the tube will:",
+                            options = listOf(
+                                "increase",
+                                "decrease",
+                                "remain constant",
+                                "first increase and then decrease"
+                            ),
+                            correctOptionIndex = 0,
+                            explanation = "A gas has a refractive index μ slightly greater than 1. As the gas is gradually pumped out to create a vacuum, the refractive index μ inside the tube decreases towards 1. Since the speed of light in a medium is v = c / μ, decreasing μ causes the speed of light inside the tube to increase towards c.",
+                            hint = "As gas density drops to zero, refractive index μ decreases from >1 to 1, and v = c/μ.",
+                            topic = "Objective I • Speed of Light in Gases"
+                        ),
+                        Question(
+                            id = "hcv_ch21_obj1_q2",
+                            questionText = "The speeds of red light and yellow light are exactly same:",
+                            options = listOf(
+                                "in vacuum but not in air",
+                                "in air but not in vacuum",
+                                "in both vacuum and air",
+                                "neither in vacuum nor in air"
+                            ),
+                            correctOptionIndex = 0,
+                            explanation = "Vacuum is completely non-dispersive, so all wavelengths of electromagnetic radiation (including red and yellow light) travel at the exact same speed c in vacuum. Air, however, is a material medium with slight dispersion (μ_yellow > μ_red > 1), so their speeds in air differ slightly.",
+                            hint = "Vacuum is the only strictly non-dispersive medium.",
+                            topic = "Objective I • Dispersion in Air vs Vacuum"
+                        ),
+                        Question(
+                            id = "hcv_ch21_obj1_q3",
+                            questionText = "An illuminated object is placed on the principal axis of a converging lens so that a real image is formed on the other side of the lens. If the object is shifted a little:",
+                            options = listOf(
+                                "the image will be shifted simultaneously with the object",
+                                "the image will be shifted a little later than the object",
+                                "the image will be shifted a little earlier than the object",
+                                "the image will not shift"
+                            ),
+                            correctOptionIndex = 1,
+                            explanation = "Because light travels at a finite speed c, the light rays leaving the newly shifted position of the object take a finite propagation time Δt = L / c to reach the lens and converge at the new image point. Therefore, the image shifts a little later than the object.",
+                            hint = "Information about the object's new position travels to the image at the finite speed of light.",
+                            topic = "Objective I • Finite Propagation Delay of Light"
+                        ),
+                        Question(
+                            id = "hcv_ch21_obj2_q1",
+                            questionText = "[Objective II] The speed of light is 299,792,458 m/s:",
+                            options = listOf(
+                                "with respect to the earth",
+                                "with respect to the sun",
+                                "with respect to a train moving on the earth",
+                                "with respect to a spaceship going in outer space"
+                            ),
+                            correctOptionIndex = 0,
+                            correctOptionIndices = setOf(0, 1, 2, 3),
+                            isMultiSelect = true,
+                            explanation = "According to the special theory of relativity, the speed of light in vacuum is c = 299,792,458 m/s in every reference frame, regardless of whether it is measured with respect to the Earth, the Sun, a moving train, or a spacecraft in outer space. Thus (a), (b), (c), and (d) are all correct.",
+                            hint = "Speed of light c is invariant across all frames of reference.",
+                            topic = "Objective II • Universal Invariance of c"
+                        ),
+                        Question(
+                            id = "hcv_ch21_obj2_q2",
+                            questionText = "[Objective II] Which of the following methods can be used to measure the speed of light in laboratory?",
+                            options = listOf(
+                                "Roemer method",
+                                "Fizeau method",
+                                "Foucault method",
+                                "Michelson method"
+                            ),
+                            correctOptionIndex = 2,
+                            correctOptionIndices = setOf(2),
+                            isMultiSelect = true,
+                            explanation = "• Roemer's method uses astronomical observations of Jupiter's moons.\n• Fizeau's method (~8.6 km between hilltops) and Michelson's method (~35 km between Mt. Wilson and Mt. San Antonio) require long outdoor baselines.\n• Only Foucault's rotating-mirror method requires a short baseline of a few meters and can be performed entirely inside a laboratory.",
+                            hint = "Foucault's rotating mirror method works over a short path inside a room.",
+                            topic = "Objective II • Laboratory Measurement of Speed of Light"
+                        ),
+                        Question(
+                            id = "hcv_ch21_obj2_q3",
+                            questionText = "[Objective II] Which of the following methods can be used to measure the speed of light in water?",
+                            options = listOf(
+                                "Roemer method",
+                                "Fizeau method",
+                                "Foucault method",
+                                "Michelson method"
+                            ),
+                            correctOptionIndex = 2,
+                            correctOptionIndices = setOf(2, 3),
+                            isMultiSelect = true,
+                            explanation = "To measure the speed of light in water, a tube filled with water is inserted along the optical path. Both Foucault (1850) and Michelson (1883) used rotating-mirror arrangements with a water-filled tube to measure the speed of light in water (proving v_water = c / μ < c). Roemer's astronomical method and Fizeau's multi-kilometer hilltop method cannot use a water-filled path.",
+                            hint = "Both Foucault and Michelson measured the speed of light in a tube of water using rotating mirrors.",
+                            topic = "Objective II • Speed of Light in Water"
+                        )
+                    )
+                )
+            )
+        )
+    }
+
+    // -------------------------------------------------------------
+    // CHAPTER 22: Photometry
+    // -------------------------------------------------------------
+    private fun createChapter22(): Chapter {
+        return Chapter(
+            id = "phy_hcv_ch22",
+            subject = SubjectType.PHYSICS,
+            title = "Chapter 22: Photometry",
+            order = 22,
+            lectures = listOf(
+                Lecture(
+                    id = "lec_hcv_ch22",
+                    courseId = "c_arjuna_jee",
+                    subject = SubjectType.PHYSICS,
+                    chapterId = "phy_hcv_ch22",
+                    chapterTitle = "Chapter 22: Photometry",
+                    title = "Lec 01: Luminous Flux, Luminous Intensity & Illuminance",
+                    lectureNumber = 1,
+                    instructor = "Prof. H.C. Verma Masterclass",
+                    durationMinutes = 45,
+                    progressSec = 0,
+                    notesSummary = listOf(
+                        "Luminous flux (Φ) measures visual sensation per unit time in lumens (lm); peak eye sensitivity is at λ = 555 nm (685 lm/W).",
+                        "Luminous intensity I = dΦ / dω in candela (cd), where dω is solid angle in steradians.",
+                        "Illuminance E = dΦ / dA = (I cos θ) / r² in lux (lm/m²): Inverse Square Law & Lambert's Cosine Law.",
+                        "Photometer balances illuminance from two sources: I₁ / r₁² = I₂ / r₂²."
+                    ),
+                    timestamps = listOf(
+                        LectureTimestamp(0, "00:00", "Radiant Flux vs Luminous Flux & Relative Luminosity"),
+                        LectureTimestamp(600, "10:00", "Solid Angle & Luminous Intensity (Candela)"),
+                        LectureTimestamp(1500, "25:00", "Illuminance & Lambert's Cosine Law"),
+                        LectureTimestamp(2100, "35:00", "Bunsen Grease-Spot & Joly Photometers")
+                    ),
+                    dppId = "dpp_hcv_ch22"
+                )
+            ),
+            dpps = listOf(
+                Dpp(
+                    id = "dpp_hcv_ch22",
+                    number = 22,
+                    title = "DPP 22: Luminous Flux, Illuminance & Photometers",
+                    subject = SubjectType.PHYSICS,
+                    chapterTitle = "Chapter 22: Photometry",
+                    courseId = "c_arjuna_jee",
+                    timeLimitMinutes = 20,
+                    status = DppStatus.PENDING,
+                    sourceBook = HCV_BOOK_NAME,
+                    questions = listOf(
+                        Question(
+                            id = "hcv_ch22_q1",
+                            questionText = "An electric lamp hangs 3 m directly above the center of a horizontal table. If the lamp is raised by 1 m, the illuminance at the point directly below the lamp will decrease by:",
+                            options = listOf("43.75%", "25%", "50%", "36%"),
+                            correctOptionIndex = 0,
+                            explanation = "By inverse square law for normal incidence (cos θ = 1): E = I / r².\nInitially at r₁ = 3 m: E₁ = I / 3² = I / 9.\nWhen raised by 1 m, r₂ = 4 m: E₂ = I / 4² = I / 16.\nRatio E₂ / E₁ = 9 / 16 = 0.5625 = 56.25% of original.\nPercentage decrease = (1 - 0.5625) × 100% = 43.75%.",
+                            hint = "Illuminance follows the inverse-square law E ∝ 1 / r².",
+                            topic = "Photometry Inverse Square Law"
+                        ),
+                        Question(
+                            id = "hcv_ch22_obj1_q1",
+                            questionText = "The one parameter that determines the brightness of a light source sensed by an eye is:",
+                            options = listOf(
+                                "energy of light entering the eye per second",
+                                "wavelength of the light",
+                                "total radiant flux entering the eye",
+                                "total luminous flux entering the eye"
+                            ),
+                            correctOptionIndex = 3,
+                            explanation = "The human eye is not equally sensitive to all wavelengths of electromagnetic radiation. Luminous flux weights the radiant energy per unit time by the spectral luminous efficiency (relative luminosity) of the human eye, so the perceived brightness of a light source is determined directly by the total luminous flux entering the eye.",
+                            hint = "Brightness sensation is measured by luminous flux (in lumens), not raw radiant watts.",
+                            topic = "Objective I • Luminous Flux & Perceived Brightness"
+                        ),
+                        Question(
+                            id = "hcv_ch22_obj1_q2",
+                            questionText = "Two light sources of intensities 8 cd and 12 cd are placed on the same side of a photometer screen at a distance of 40 cm from it. Where should an 80 cd source be placed on the other side to balance the illuminance?",
+                            options = listOf(
+                                "40 cm",
+                                "60 cm",
+                                "80 cm",
+                                "160 cm"
+                            ),
+                            correctOptionIndex = 2,
+                            explanation = "Total illuminance on the first side of the photometer screen from the 8 cd and 12 cd sources at r₁ = 40 cm is:\nE₁ = (I₁ + I₂) / r₁² = (8 + 12) / 40² = 20 / 40².\nTo balance this illuminance using an I₃ = 80 cd source at distance d on the other side:\nE₂ = I₃ / d² = 80 / d².\nSetting E₁ = E₂:\n20 / 40² = 80 / d² => d² = (80 / 20) × 40² = 4 × 40² => d = 2 × 40 cm = 80 cm.",
+                            hint = "Equate total illuminance (8 + 12) / 40² to 80 / d².",
+                            topic = "Objective I • Photometer Balance"
                         )
                     )
                 )
