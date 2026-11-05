@@ -219,10 +219,20 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          PREPARE_OUTCOME="${{ steps.prepare_asset.outcome }}"
           RELEASE_OUTCOME="${{ steps.publish_release.outcome }}"
           RELEASE_TAG="debug-apk-build-${GITHUB_RUN_NUMBER}-${GITHUB_RUN_ATTEMPT}"
           RELEASE_TITLE="Debug APK Build #${GITHUB_RUN_NUMBER}"
           ASSET_NAME="${{ steps.prepare_asset.outputs.asset_name }}"
+
+          if [ "${PREPARE_OUTCOME}" != "success" ]; then
+            echo "::error::The Gradle debug APK build step did not complete successfully. Check the 'Build debug APK' step logs above."
+            {
+              echo "## Debug APK Build Summary"
+              echo "- **APK Build Status:** Failed (see \`Build debug APK\` step logs)"
+            } >> "${GITHUB_STEP_SUMMARY}"
+            exit 0
+          fi
 
           if [ "${RELEASE_OUTCOME}" = "success" ] && gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
             RELEASE_URL=$(gh release view "${RELEASE_TAG}" --json url -q .url)

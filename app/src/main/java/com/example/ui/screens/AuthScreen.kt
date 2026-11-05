@@ -39,6 +39,7 @@ import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential.Companion.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
 import com.google.firebase.Firebase
+import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.auth
 import kotlinx.coroutines.CoroutineScope
@@ -46,6 +47,17 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 private const val TAG = "Auth"
+private const val DEFAULT_WEB_CLIENT_ID_RES = "default_web_client_id"
+
+private fun isFirebaseInitialized(context: Context): Boolean {
+    return runCatching { FirebaseApp.getApps(context).isNotEmpty() }.getOrDefault(false)
+}
+
+private fun resolveWebClientId(context: Context): String? {
+    val resId = context.resources.getIdentifier(DEFAULT_WEB_CLIENT_ID_RES, "string", context.packageName)
+    if (resId == 0) return null
+    return runCatching { context.getString(resId) }.getOrNull()?.takeIf { it.isNotBlank() }
+}
 
 fun attemptAutoSignIn(
     context: Context,
@@ -54,13 +66,16 @@ fun attemptAutoSignIn(
     onUnauthenticated: () -> Unit,
     scope: CoroutineScope
 ) {
-    if (Firebase.auth.currentUser != null) {
+    if (!isFirebaseInitialized(context)) {
+        onUnauthenticated()
+        return
+    }
+    if (runCatching { Firebase.auth.currentUser }.getOrNull() != null) {
         onAuthSuccess()
         return
     }
-    val clientId = try {
-        context.getString(R.string.default_web_client_id)
-    } catch (e: Exception) {
+    val clientId = resolveWebClientId(context)
+    if (clientId == null) {
         onUnauthenticated()
         return
     }
@@ -101,10 +116,13 @@ fun onGoogleSignInClicked(
     scope: CoroutineScope,
     onAuthCancelled: () -> Unit = {}
 ) {
-    val clientId = try {
-        context.getString(R.string.default_web_client_id)
-    } catch (e: Exception) {
-        onAuthError("Google Sign-In configuration missing: default_web_client_id not found")
+    if (!isFirebaseInitialized(context)) {
+        onAuthError("Cloud configuration (google-services.json) is not bundled in this APK build. Tap 'Continue in Offline Study Mode' below.")
+        return
+    }
+    val clientId = resolveWebClientId(context)
+    if (clientId == null) {
+        onAuthError("Google Sign-In configuration missing: default_web_client_id not found. You can continue in Offline Study Mode below.")
         return
     }
 
@@ -142,7 +160,9 @@ fun signOut(
     onSignOutComplete: () -> Unit,
     scope: CoroutineScope
 ) {
-    Firebase.auth.signOut()
+    if (isFirebaseInitialized(context)) {
+        runCatching { Firebase.auth.signOut() }
+    }
     scope.launch {
         try {
             credentialManager.clearCredentialState(ClearCredentialStateRequest())
@@ -218,6 +238,7 @@ fun GoogleSignInButton(
 @Composable
 fun AuthScreen(
     onAuthSuccess: () -> Unit,
+    onContinueOffline: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -345,6 +366,29 @@ fun AuthScreen(
                             errorMessage = msg
                         }
                     )
+
+                    if (onContinueOffline != null) {
+                        OutlinedButton(
+                            onClick = onContinueOffline,
+                            shape = RoundedCornerShape(14.dp),
+                            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 48.dp)
+                                .testTag("continue_offline_mode_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.School,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Continue in Offline Study Mode",
+                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold)
+                            )
+                        }
+                    }
 
                     Row(
                         verticalAlignment = Alignment.CenterVertically,

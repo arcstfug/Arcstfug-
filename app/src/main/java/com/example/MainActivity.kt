@@ -27,6 +27,7 @@ import com.example.ui.viewmodel.EduViewModel
 import com.example.ui.viewmodel.MainNavTab
 import com.example.util.configureAppCheck
 import com.google.firebase.Firebase
+import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
 
@@ -51,43 +52,66 @@ fun AppRoot() {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val credentialManager = remember { CredentialManager.create(context) }
-    var currentUser by remember { mutableStateOf(Firebase.auth.currentUser) }
+    val isFirebaseReady = remember(context) {
+        runCatching { FirebaseApp.getApps(context).isNotEmpty() }.getOrDefault(false)
+    }
+    var currentUser by remember {
+        mutableStateOf(
+            if (isFirebaseReady) runCatching { Firebase.auth.currentUser }.getOrNull() else null
+        )
+    }
+    var isOfflineSession by remember { mutableStateOf(false) }
 
-    DisposableEffect(Unit) {
-        val listener = FirebaseAuth.AuthStateListener { auth ->
-            currentUser = auth.currentUser
-        }
-        Firebase.auth.addAuthStateListener(listener)
-        onDispose {
-            Firebase.auth.removeAuthStateListener(listener)
+    DisposableEffect(isFirebaseReady) {
+        if (isFirebaseReady) {
+            val listener = FirebaseAuth.AuthStateListener { auth ->
+                currentUser = auth.currentUser
+            }
+            runCatching { Firebase.auth.addAuthStateListener(listener) }
+            onDispose {
+                runCatching { Firebase.auth.removeAuthStateListener(listener) }
+            }
+        } else {
+            onDispose { }
         }
     }
 
     val activeUser = currentUser
-    if (activeUser == null) {
+    if (activeUser == null && !isOfflineSession) {
         AuthScreen(
             onAuthSuccess = {
-                currentUser = Firebase.auth.currentUser
+                currentUser = if (isFirebaseReady) {
+                    runCatching { Firebase.auth.currentUser }.getOrNull()
+                } else {
+                    null
+                }
+            },
+            onContinueOffline = {
+                isOfflineSession = true
             }
         )
     } else {
+        val sessionKey = activeUser?.uid ?: "offline_student"
         val eduViewModel: EduViewModel = viewModel(
-            key = "edu_vm_${activeUser.uid}",
+            key = "edu_vm_$sessionKey",
             factory = EduViewModel.provideFactory(
                 context = context,
-                userId = activeUser.uid,
-                displayName = activeUser.displayName,
-                email = activeUser.email
+                userId = activeUser?.uid,
+                displayName = activeUser?.displayName,
+                email = activeUser?.email
             )
         )
         MainAppContent(
             viewModel = eduViewModel,
-            userEmail = activeUser.email,
+            userEmail = activeUser?.email,
             onSignOut = {
                 signOut(
                     context = context,
                     credentialManager = credentialManager,
-                    onSignOutComplete = { currentUser = null },
+                    onSignOutComplete = {
+                        currentUser = null
+                        isOfflineSession = false
+                    },
                     scope = coroutineScope
                 )
             }

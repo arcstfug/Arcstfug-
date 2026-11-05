@@ -10,6 +10,7 @@ import com.example.data.CloudSyncRepository
 import com.example.data.EduRepository
 import com.example.model.*
 import com.google.firebase.Firebase
+import com.google.firebase.FirebaseApp
 import com.google.firebase.ai.ai
 import com.google.firebase.ai.type.Schema
 import com.google.firebase.ai.type.generationConfig
@@ -887,9 +888,19 @@ class EduViewModel(
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 val appContext = context.applicationContext
-                val dbId = appContext.getString(R.string.firestore_database_id)
-                val firestore = FirebaseFirestore.getInstance(dbId)
-                val cloudRepo = CloudSyncRepository(firestore)
+                val cloudRepo = if (!userId.isNullOrBlank()) {
+                    runCatching {
+                        if (FirebaseApp.getApps(appContext).isNotEmpty()) {
+                            val dbId = appContext.getString(R.string.firestore_database_id)
+                            val firestore = FirebaseFirestore.getInstance(dbId)
+                            CloudSyncRepository(firestore)
+                        } else {
+                            null
+                        }
+                    }.getOrNull()
+                } else {
+                    null
+                }
                 return EduViewModel(
                     repository = EduRepository(),
                     cloudRepository = cloudRepo,
