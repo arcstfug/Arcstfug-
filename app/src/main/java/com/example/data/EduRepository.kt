@@ -282,6 +282,117 @@ class EduRepository {
         return getAllLectures().find { it.id == lectureId }
     }
 
+    fun getEnrolledCourseIds(): List<String> {
+        return _courses.value.filter { it.isEnrolled }.map { it.id }
+    }
+
+    fun getBookmarkedLectureIds(): List<String> {
+        return getAllLectures().filter { it.isBookmarked }.map { it.id }
+    }
+
+    fun getCompletedLectureIds(): List<String> {
+        return getAllLectures().filter { it.isCompleted }.map { it.id }
+    }
+
+    fun applyCloudProfile(doc: StudentProfileDoc) {
+        _userProfile.update { current ->
+            current.copy(
+                name = doc.name.ifBlank { current.name },
+                targetExam = doc.targetExam.ifBlank { current.targetExam },
+                classLevel = doc.classLevel.ifBlank { current.classLevel },
+                studentGoal = doc.studentGoal.ifBlank { current.studentGoal },
+                bio = doc.bio.ifBlank { current.bio },
+                currentStreakDays = doc.currentStreakDays.toInt(),
+                totalDppsSolved = doc.totalDppsSolved.toInt(),
+                overallAccuracy = doc.overallAccuracy.toInt(),
+                lecturesWatched = doc.lecturesWatched.toInt(),
+                studyHours = doc.studyHours.toFloat(),
+                xp = doc.xp.toInt()
+            )
+        }
+        val enrolledSet = doc.enrolledCourseIds.toSet()
+        val bookmarkedSet = doc.bookmarkedLectureIds.toSet()
+        val completedSet = doc.completedLectureIds.toSet()
+
+        _courses.update { courseList ->
+            courseList.map { course ->
+                course.copy(
+                    isEnrolled = if (enrolledSet.isNotEmpty()) course.id in enrolledSet else course.isEnrolled,
+                    subjects = course.subjects.map { subj ->
+                        subj.copy(
+                            chapters = subj.chapters.map { chap ->
+                                chap.copy(
+                                    lectures = chap.lectures.map { lec ->
+                                        lec.copy(
+                                            isBookmarked = if (bookmarkedSet.isNotEmpty()) lec.id in bookmarkedSet else lec.isBookmarked,
+                                            isCompleted = if (completedSet.isNotEmpty()) lec.id in completedSet else lec.isCompleted
+                                        )
+                                    }
+                                )
+                            }
+                        )
+                    }
+                )
+            }
+        }
+    }
+
+    fun applyCloudDppAttempts(attempts: List<DppAttemptDoc>) {
+        if (attempts.isEmpty()) return
+        val attemptMap = attempts.associateBy { it.dppId }
+        _courses.update { courseList ->
+            courseList.map { course ->
+                course.copy(
+                    subjects = course.subjects.map { subj ->
+                        subj.copy(
+                            chapters = subj.chapters.map { chap ->
+                                chap.copy(
+                                    dpps = chap.dpps.map { dpp ->
+                                        val cloudAttempt = attemptMap[dpp.id]
+                                        if (cloudAttempt != null) {
+                                            dpp.copy(
+                                                status = if (cloudAttempt.status == "PENDING") DppStatus.PENDING else DppStatus.COMPLETED,
+                                                score = cloudAttempt.score.toInt(),
+                                                timeSpentSeconds = cloudAttempt.timeSpentSeconds.toInt(),
+                                                completedAt = cloudAttempt.updatedAt?.toDate()?.time ?: dpp.completedAt
+                                            )
+                                        } else {
+                                            dpp
+                                        }
+                                    }
+                                )
+                            }
+                        )
+                    }
+                )
+            }
+        }
+    }
+
+    fun applyCloudDoubts(cloudDoubts: List<StudentDoubtDoc>) {
+        if (cloudDoubts.isEmpty()) return
+        val mapped = cloudDoubts
+            .sortedByDescending { it.updatedAt?.seconds ?: 0L }
+            .map { doc ->
+                val subjectEnum = SubjectType.entries.find { it.name.equals(doc.subject, ignoreCase = true) }
+                    ?: SubjectType.PHYSICS
+                DoubtQuery(
+                    id = doc.id.ifBlank { "d_cloud_${doc.questionText.hashCode()}" },
+                    studentName = doc.studentName.ifBlank { _userProfile.value.name },
+                    questionText = doc.questionText,
+                    subject = subjectEnum,
+                    status = doc.status,
+                    facultyReply = doc.facultyReply,
+                    timestamp = "Synced in Cloud"
+                )
+            }
+        _doubts.update { existing ->
+            val cloudIds = mapped.map { it.id }.toSet()
+            val remainingLocal = existing.filterNot { it.id in cloudIds }
+            mapped + remainingLocal
+        }
+    }
+
     private fun createInitialCourses(): List<CourseBatch> {
         return listOf(
             CourseBatch(

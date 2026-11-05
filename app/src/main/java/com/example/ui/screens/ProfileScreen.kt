@@ -39,6 +39,8 @@ fun ProfileScreen(
     onPostDoubt: (String, SubjectType) -> Unit,
     onGenerateStudyPlan: (Int, SubjectType, String) -> Unit,
     onUpdateProfile: (String, String, String, String, String) -> Unit = { _, _, _, _, _ -> },
+    userEmail: String? = null,
+    onSignOut: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val uriHandler = LocalUriHandler.current
@@ -139,11 +141,54 @@ fun ProfileScreen(
                         }
                     }
 
-                    // Edit Student Profile Button Row
+                    // Cloud Sync Badge + Edit Student Profile & Sign Out Row
+                    if (!userEmail.isNullOrBlank()) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = EmeraldSuccess.copy(alpha = 0.12f)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.CloudDone,
+                                    contentDescription = "Cloud Synced",
+                                    tint = EmeraldSuccess,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Text(
+                                    text = "Cloud Synced • $userEmail",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                                    color = EmeraldSuccess
+                                )
+                            }
+                        }
+                    }
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
+                        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
+                        if (onSignOut != null) {
+                            OutlinedButton(
+                                onClick = onSignOut,
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                                modifier = Modifier.testTag("sign_out_button")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Logout,
+                                    contentDescription = "Sign Out",
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Sign Out", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                            }
+                        }
+
                         FilledTonalButton(
                             onClick = {
                                 editName = userProfile.name

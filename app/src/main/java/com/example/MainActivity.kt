@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.credentials.CredentialManager
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -24,6 +26,9 @@ import com.example.ui.viewmodel.AppRoutes
 import com.example.ui.viewmodel.EduViewModel
 import com.example.ui.viewmodel.MainNavTab
 import com.example.util.configureAppCheck
+import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.auth
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,14 +40,67 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             ARCSTFUGTheme {
-                MainAppContent()
+                AppRoot()
             }
         }
     }
 }
 
 @Composable
-fun MainAppContent(viewModel: EduViewModel = viewModel()) {
+fun AppRoot() {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val credentialManager = remember { CredentialManager.create(context) }
+    var currentUser by remember { mutableStateOf(Firebase.auth.currentUser) }
+
+    DisposableEffect(Unit) {
+        val listener = FirebaseAuth.AuthStateListener { auth ->
+            currentUser = auth.currentUser
+        }
+        Firebase.auth.addAuthStateListener(listener)
+        onDispose {
+            Firebase.auth.removeAuthStateListener(listener)
+        }
+    }
+
+    val activeUser = currentUser
+    if (activeUser == null) {
+        AuthScreen(
+            onAuthSuccess = {
+                currentUser = Firebase.auth.currentUser
+            }
+        )
+    } else {
+        val eduViewModel: EduViewModel = viewModel(
+            key = "edu_vm_${activeUser.uid}",
+            factory = EduViewModel.provideFactory(
+                context = context,
+                userId = activeUser.uid,
+                displayName = activeUser.displayName,
+                email = activeUser.email
+            )
+        )
+        MainAppContent(
+            viewModel = eduViewModel,
+            userEmail = activeUser.email,
+            onSignOut = {
+                signOut(
+                    context = context,
+                    credentialManager = credentialManager,
+                    onSignOutComplete = { currentUser = null },
+                    scope = coroutineScope
+                )
+            }
+        )
+    }
+}
+
+@Composable
+fun MainAppContent(
+    viewModel: EduViewModel = viewModel(),
+    userEmail: String? = null,
+    onSignOut: (() -> Unit)? = null
+) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
@@ -253,6 +311,8 @@ fun MainAppContent(viewModel: EduViewModel = viewModel()) {
                             onUpdateProfile = { name, targetExam, classLevel, studentGoal, bio ->
                                 viewModel.updateUserProfile(name, targetExam, classLevel, studentGoal, bio)
                             },
+                            userEmail = userEmail,
+                            onSignOut = onSignOut,
                             modifier = Modifier.fillMaxSize()
                         )
                     }

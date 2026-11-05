@@ -1,0 +1,234 @@
+{
+  "entities": {
+    "StudentProfile": {
+      "title": "StudentProfile",
+      "description": "Represents an authenticated ARCSTFUG student's profile, study statistics, streak, XP, and course/lecture progress.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The Firebase Auth UID of the student."
+        },
+        "name": {
+          "type": "string",
+          "description": "Student full name."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Student Google account email."
+        },
+        "targetExam": {
+          "type": "string",
+          "description": "Target competitive exam (e.g. JEE Main & Advanced 2026, NEET-UG 2026)."
+        },
+        "classLevel": {
+          "type": "string",
+          "description": "Student class or batch level (e.g. Class 12th)."
+        },
+        "studentGoal": {
+          "type": "string",
+          "description": "Student academic rank goal."
+        },
+        "bio": {
+          "type": "string",
+          "description": "Student bio or study motto."
+        },
+        "currentStreakDays": {
+          "type": "integer",
+          "description": "Consecutive study streak in days."
+        },
+        "totalDppsSolved": {
+          "type": "integer",
+          "description": "Total number of Daily Practice Problem sets solved."
+        },
+        "overallAccuracy": {
+          "type": "integer",
+          "description": "Overall DPP accuracy percentage (0-100)."
+        },
+        "lecturesWatched": {
+          "type": "integer",
+          "description": "Total number of lectures completed."
+        },
+        "studyHours": {
+          "type": "number",
+          "description": "Total study hours logged."
+        },
+        "xp": {
+          "type": "integer",
+          "description": "Total experience points earned."
+        },
+        "enrolledCourseIds": {
+          "type": "array",
+          "description": "List of enrolled course batch IDs."
+        },
+        "bookmarkedLectureIds": {
+          "type": "array",
+          "description": "List of bookmarked lecture IDs."
+        },
+        "completedLectureIds": {
+          "type": "array",
+          "description": "List of completed lecture IDs."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the profile was created (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the profile was last updated (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "name",
+        "targetExam",
+        "classLevel",
+        "studentGoal",
+        "bio",
+        "currentStreakDays",
+        "totalDppsSolved",
+        "overallAccuracy",
+        "lecturesWatched",
+        "studyHours",
+        "xp",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "DppAttempt": {
+      "title": "DppAttempt",
+      "description": "Stores a student's attempt, score, and completion status for a Daily Practice Problem (DPP) sheet.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The Firebase Auth UID of the student."
+        },
+        "dppId": {
+          "type": "string",
+          "description": "Unique identifier of the DPP sheet."
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the DPP sheet."
+        },
+        "subject": {
+          "type": "string",
+          "description": "Subject name (PHYSICS, CHEMISTRY, MATHEMATICS, BIOLOGY)."
+        },
+        "score": {
+          "type": "integer",
+          "description": "Number of correct answers scored."
+        },
+        "totalQuestions": {
+          "type": "integer",
+          "description": "Total number of questions in the DPP."
+        },
+        "timeSpentSeconds": {
+          "type": "integer",
+          "description": "Time spent solving the DPP in seconds."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["PENDING", "COMPLETED"],
+          "description": "Completion status of the DPP."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the attempt was first recorded (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the attempt was last updated (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "dppId",
+        "title",
+        "subject",
+        "score",
+        "totalQuestions",
+        "timeSpentSeconds",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "StudentDoubt": {
+      "title": "StudentDoubt",
+      "description": "Stores a student's academic doubt question and the step-by-step Gemini AI Tutor explanation.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The Firebase Auth UID of the student."
+        },
+        "studentName": {
+          "type": "string",
+          "description": "Display name of the student."
+        },
+        "questionText": {
+          "type": "string",
+          "description": "The academic doubt question asked by the student."
+        },
+        "subject": {
+          "type": "string",
+          "description": "Subject name (PHYSICS, CHEMISTRY, MATHEMATICS, BIOLOGY)."
+        },
+        "status": {
+          "type": "string",
+          "description": "Resolution status of the doubt."
+        },
+        "facultyReply": {
+          "type": "string",
+          "description": "Step-by-step AI Tutor or faculty explanation."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the doubt was posted (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the doubt was updated (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "studentName",
+        "questionText",
+        "subject",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/StudentProfile"
+      },
+      "description": "Stores each authenticated student's profile and study progress metrics."
+    },
+    "/users/{userId}/dpp_attempts/{dppId}": {
+      "schema": {
+        "$ref": "#/entities/DppAttempt"
+      },
+      "description": "Stores each authenticated student's completed DPP scores and attempt history."
+    },
+    "/users/{userId}/doubts/{doubtId}": {
+      "schema": {
+        "$ref": "#/entities/StudentDoubt"
+      },
+      "description": "Stores each authenticated student's posted academic doubts and AI Tutor solutions."
+    }
+  }
+}

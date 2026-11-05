@@ -1,14 +1,20 @@
 package com.example.ui.viewmodel
 
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.R
+import com.example.data.CloudSyncRepository
 import com.example.data.EduRepository
 import com.example.model.*
 import com.google.firebase.Firebase
 import com.google.firebase.ai.ai
 import com.google.firebase.ai.type.Schema
 import com.google.firebase.ai.type.generationConfig
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.TimeoutCancellationException
@@ -57,7 +63,11 @@ enum class MainNavTab(
 }
 
 class EduViewModel(
-    private val repository: EduRepository = EduRepository()
+    private val repository: EduRepository = EduRepository(),
+    private val cloudRepository: CloudSyncRepository? = null,
+    private val currentUserId: String? = null,
+    private val currentUserDisplayName: String? = null,
+    private val currentUserEmail: String? = null
 ) : ViewModel() {
 
     // Lazy initialization of Gemini 3.8 Flash for streaming explanations, derivations & study plans
@@ -180,6 +190,101 @@ class EduViewModel(
     private val _snackbarMessage = MutableStateFlow<String?>(null)
     val snackbarMessage = _snackbarMessage.asStateFlow()
 
+    init {
+        val cloud = cloudRepository
+        val uid = currentUserId
+        if (cloud != null && !uid.isNullOrBlank()) {
+            val defaultName = currentUserDisplayName?.takeIf { it.isNotBlank() } ?: repository.userProfile.value.name
+            if (!currentUserDisplayName.isNullOrBlank()) {
+                repository.updateUserProfile(
+                    name = defaultName,
+                    targetExam = repository.userProfile.value.targetExam,
+                    classLevel = repository.userProfile.value.classLevel,
+                    studentGoal = repository.userProfile.value.studentGoal,
+                    bio = repository.userProfile.value.bio
+                )
+            }
+            viewModelScope.launch {
+                cloud.createInitialProfileIfMissing(
+                    name = defaultName,
+                    email = currentUserEmail,
+                    targetExam = repository.userProfile.value.targetExam,
+                    classLevel = repository.userProfile.value.classLevel,
+                    studentGoal = repository.userProfile.value.studentGoal,
+                    bio = repository.userProfile.value.bio
+                )
+            }
+            viewModelScope.launch {
+                cloud.observeStudentProfile(uid)
+                    .catch { error ->
+                        val firestoreError = generateSequence(error) { it.cause }
+                            .filterIsInstance<FirebaseFirestoreException>()
+                            .firstOrNull()
+                        if (firestoreError == null && error is CancellationException) throw error
+                        Log.e(TAG, "Profile sync stream error", firestoreError ?: error)
+                    }
+                    .collect { profileDoc ->
+                        if (profileDoc != null) {
+                            repository.applyCloudProfile(profileDoc)
+                        }
+                    }
+            }
+            viewModelScope.launch {
+                cloud.observeDppAttempts(uid)
+                    .catch { error ->
+                        val firestoreError = generateSequence(error) { it.cause }
+                            .filterIsInstance<FirebaseFirestoreException>()
+                            .firstOrNull()
+                        if (firestoreError == null && error is CancellationException) throw error
+                        Log.e(TAG, "DPP attempts sync stream error", firestoreError ?: error)
+                    }
+                    .collect { attempts ->
+                        repository.applyCloudDppAttempts(attempts)
+                    }
+            }
+            viewModelScope.launch {
+                cloud.observeStudentDoubts(uid)
+                    .catch { error ->
+                        val firestoreError = generateSequence(error) { it.cause }
+                            .filterIsInstance<FirebaseFirestoreException>()
+                            .firstOrNull()
+                        if (firestoreError == null && error is CancellationException) throw error
+                        Log.e(TAG, "Student doubts sync stream error", firestoreError ?: error)
+                    }
+                    .collect { cloudDoubts ->
+                        repository.applyCloudDoubts(cloudDoubts)
+                    }
+            }
+        }
+    }
+
+    private fun syncProfileToCloud() {
+        val cloud = cloudRepository ?: return
+        if (currentUserId.isNullOrBlank()) return
+        val profile = repository.userProfile.value
+        val enrolledIds = repository.getEnrolledCourseIds()
+        val bookmarkedIds = repository.getBookmarkedLectureIds()
+        val completedIds = repository.getCompletedLectureIds()
+        viewModelScope.launch {
+            cloud.updateStudentProfile(
+                name = profile.name,
+                targetExam = profile.targetExam,
+                classLevel = profile.classLevel,
+                studentGoal = profile.studentGoal,
+                bio = profile.bio,
+                currentStreakDays = profile.currentStreakDays,
+                totalDppsSolved = profile.totalDppsSolved,
+                overallAccuracy = profile.overallAccuracy,
+                lecturesWatched = profile.lecturesWatched,
+                studyHours = profile.studyHours,
+                xp = profile.xp,
+                enrolledCourseIds = enrolledIds,
+                bookmarkedLectureIds = bookmarkedIds,
+                completedLectureIds = completedIds
+            )
+        }
+    }
+
     fun switchTab(tab: MainNavTab) {
         _currentTab.value = tab
         _activeBatchId.value = null
@@ -212,6 +317,9 @@ class EduViewModel(
             val lec = repository.findLectureById(lecId)
             val isDone = lec != null && _lectureProgressSec.value >= (lec.durationMinutes * 60 * 0.9f)
             repository.updateLectureProgress(lecId, _lectureProgressSec.value, isDone)
+            if (isDone) {
+                syncProfileToCloud()
+            }
         }
         stopVideoPlayback()
         _activeLectureId.value = null
@@ -264,6 +372,7 @@ class EduViewModel(
                     } else {
                         _isPlaying.value = false
                         repository.updateLectureProgress(lec.id, maxSec, true)
+                        syncProfileToCloud()
                         showSnackbar("🎉 Lecture completed! +50 XP")
                     }
                 }
@@ -311,9 +420,25 @@ class EduViewModel(
         val dppId = _activeDppSolvingId.value ?: return
         val dpp = repository.findDppById(dppId) ?: return
         dppTimerJob?.cancel()
-        val timeSpent = (dpp.timeLimitMinutes * 60) - _dppTimerSec.value
+        val timeSpent = ((dpp.timeLimitMinutes * 60) - _dppTimerSec.value).coerceAtLeast(10)
 
-        repository.submitDpp(dppId, _dppUserAnswers.value, timeSpent.coerceAtLeast(10))
+        repository.submitDpp(dppId, _dppUserAnswers.value, timeSpent)
+        val updatedDpp = repository.findDppById(dppId)
+        val cloud = cloudRepository
+        if (cloud != null && !currentUserId.isNullOrBlank() && updatedDpp != null) {
+            viewModelScope.launch {
+                cloud.saveDppAttempt(
+                    dppId = updatedDpp.id,
+                    title = updatedDpp.title,
+                    subject = updatedDpp.subject.name,
+                    score = updatedDpp.score,
+                    totalQuestions = updatedDpp.questions.size.coerceAtLeast(1),
+                    timeSpentSeconds = updatedDpp.timeSpentSeconds,
+                    status = "COMPLETED"
+                )
+            }
+            syncProfileToCloud()
+        }
         _activeDppSolvingId.value = null
         _activeDppResultId.value = dppId
         showSnackbar("🎯 DPP Submitted successfully! Check solutions.")
@@ -321,6 +446,21 @@ class EduViewModel(
 
     fun reattemptDpp(dppId: String) {
         repository.reattemptDpp(dppId)
+        val dpp = repository.findDppById(dppId)
+        val cloud = cloudRepository
+        if (cloud != null && !currentUserId.isNullOrBlank() && dpp != null) {
+            viewModelScope.launch {
+                cloud.saveDppAttempt(
+                    dppId = dpp.id,
+                    title = dpp.title,
+                    subject = dpp.subject.name,
+                    score = 0,
+                    totalQuestions = dpp.questions.size.coerceAtLeast(1),
+                    timeSpentSeconds = 0,
+                    status = "PENDING"
+                )
+            }
+        }
         _activeDppResultId.value = null
         startDpp(dppId)
     }
@@ -401,12 +541,23 @@ class EduViewModel(
                 val finalAnswer = accumulatedText.toString().trim()
                 if (finalAnswer.isNotEmpty()) {
                     _doubtAiState.value = AiUiState.Success(finalAnswer)
+                    val solvedStatus = "Solved by Gemini AI Tutor ✨"
                     repository.upsertDoubt(
                         initialDoubt.copy(
-                            status = "Solved by Gemini AI Tutor ✨",
+                            status = solvedStatus,
                             facultyReply = finalAnswer
                         )
                     )
+                    if (cloudRepository != null && !currentUserId.isNullOrBlank()) {
+                        cloudRepository.saveStudentDoubt(
+                            doubtId = doubtId,
+                            studentName = studentName,
+                            questionText = questionText.trim(),
+                            subject = subject.name,
+                            status = solvedStatus,
+                            facultyReply = finalAnswer
+                        )
+                    }
                     showSnackbar("✨ Gemini AI Tutor solved your doubt!")
                 } else {
                     val emptyMsg = "Gemini AI returned an empty response. Please try asking again."
@@ -648,16 +799,19 @@ class EduViewModel(
             studentGoal = studentGoal,
             bio = bio
         )
-        showSnackbar("✅ Student profile updated successfully!")
+        syncProfileToCloud()
+        showSnackbar("✅ Student profile updated & synced to cloud!")
     }
 
     fun enrollCourse(courseId: String) {
         repository.enrollCourse(courseId)
+        syncProfileToCloud()
         showSnackbar("Course status updated!")
     }
 
     fun toggleLectureBookmark(lectureId: String) {
         repository.toggleLectureBookmark(lectureId)
+        syncProfileToCloud()
         showSnackbar("Bookmark updated!")
     }
 
@@ -679,5 +833,29 @@ class EduViewModel(
 
     private fun showSnackbar(message: String) {
         _snackbarMessage.value = message
+    }
+
+    companion object {
+        fun provideFactory(
+            context: Context,
+            userId: String?,
+            displayName: String?,
+            email: String?
+        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                val appContext = context.applicationContext
+                val dbId = appContext.getString(R.string.firestore_database_id)
+                val firestore = FirebaseFirestore.getInstance(dbId)
+                val cloudRepo = CloudSyncRepository(firestore)
+                return EduViewModel(
+                    repository = EduRepository(),
+                    cloudRepository = cloudRepo,
+                    currentUserId = userId,
+                    currentUserDisplayName = displayName,
+                    currentUserEmail = email
+                ) as T
+            }
+        }
     }
 }
