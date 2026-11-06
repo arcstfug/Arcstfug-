@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -49,6 +50,7 @@ fun LecturePlayerScreen(
 ) {
     BackHandler { onBack() }
 
+    val uriHandler = LocalUriHandler.current
     var selectedTab by remember { mutableIntStateOf(0) }
     var doubtInput by remember { mutableStateOf("") }
     var notesDownloaded by remember { mutableStateOf(false) }
@@ -80,6 +82,47 @@ fun LecturePlayerScreen(
                 onBack = onBack,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
+
+            if (!lecture.videoUrl.isNullOrBlank()) {
+                Surface(
+                    color = IndigoPrimary.copy(alpha = 0.12f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Teacher Uploaded Video Stream Attached",
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                color = IndigoPrimary
+                            )
+                            Text(
+                                text = lecture.videoUrl,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1
+                            )
+                        }
+                        if (lecture.videoUrl.startsWith("http")) {
+                            FilledTonalButton(
+                                onClick = { uriHandler.openUri(lecture.videoUrl) },
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                modifier = Modifier.testTag("open_external_video_url_btn")
+                            ) {
+                                Icon(Icons.Filled.OpenInNew, contentDescription = null, modifier = Modifier.size(14.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Open Stream", fontSize = 11.sp)
+                            }
+                        }
+                    }
+                }
+            }
 
             // Tabs for Notes & AI, Timestamps, DPP, AI Doubt Tutor
             TabRow(

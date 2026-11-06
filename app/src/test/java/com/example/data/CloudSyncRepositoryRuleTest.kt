@@ -109,6 +109,47 @@ class CloudSyncRepositoryRuleTest : FirestoreEmulatorTestBase() {
         assertEquals(FirebaseFirestoreException.Code.PERMISSION_DENIED, firestoreException.code)
     }
 
+    @Test
+    fun saveAndObserveTeacherUpload_publishedItem_emitsAndRestrictsCrossUserDelete() = runBlocking {
+        signInTestUser(ALICE_EMAIL)
+        val aliceRepo = CloudSyncRepository(firestore)
+        val uploadId = "up_lec_${UUID.randomUUID().toString().take(8)}"
+
+        val saveResult = withTimeout(DEFAULT_TIMEOUT_MS) {
+            aliceRepo.saveTeacherUpload(
+                uploadId = uploadId,
+                authorName = "Prof. H.C. Verma",
+                uploadType = "VIDEO",
+                title = "Lec 05: Rotational Dynamics & Rolling Motion",
+                subject = "PHYSICS",
+                chapterTitle = "Chapter 10: Rotational Mechanics",
+                courseId = "c_arjuna_jee",
+                resourceUrl = "https://drive.google.com/drive/folders/1-Gii-7kSrT4Do8x6TkO3mhy4IxeP2o57",
+                materialCategory = "Video Lecture",
+                description = "Instantaneous axis of rotation and conservation of angular momentum.",
+                durationMinutes = 60,
+                isPublished = true
+            )
+        }
+        assertTrue("Save teacher upload failed: ${saveResult.exceptionOrNull()}", saveResult.isSuccess)
+
+        signInTestUser(BOB_EMAIL)
+        val bobRepo = CloudSyncRepository(firestore)
+
+        val emittedUploads = withTimeout(FLOW_TIMEOUT_MS) {
+            bobRepo.observePublishedTeacherUploads().first { list -> list.any { it.id == uploadId } }
+        }
+        assertTrue(emittedUploads.any { it.id == uploadId && it.uploadType == "VIDEO" })
+
+        val crossUserDelete = withTimeout(DEFAULT_TIMEOUT_MS) {
+            bobRepo.deleteTeacherUpload(uploadId)
+        }
+        assertTrue(crossUserDelete.isFailure)
+        val deleteFirestoreEx = crossUserDelete.exceptionOrNull()?.unwrapFirestoreException()
+        assertNotNull(deleteFirestoreEx)
+        assertEquals(FirebaseFirestoreException.Code.PERMISSION_DENIED, deleteFirestoreEx?.code)
+    }
+
     private companion object {
         const val ALICE_EMAIL = "alice@arcstfug.com"
         const val BOB_EMAIL = "bob@arcstfug.com"
@@ -116,3 +157,4 @@ class CloudSyncRepositoryRuleTest : FirestoreEmulatorTestBase() {
         const val FLOW_TIMEOUT_MS = 3000L
     }
 }
+

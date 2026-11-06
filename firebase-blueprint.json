@@ -209,6 +209,92 @@
         "createdAt",
         "updatedAt"
       ]
+    },
+    "TeacherUpload": {
+      "title": "TeacherUpload",
+      "description": "Stores a teacher-uploaded Video Lecture, Daily Practice Problem (DPP) sheet, or Study Material (PDF Notes, Formula Sheet, Drive Folder, PYQ Booklet).",
+      "type": "object",
+      "properties": {
+        "authorId": {
+          "type": "string",
+          "description": "The Firebase Auth UID of the uploading teacher/faculty."
+        },
+        "authorName": {
+          "type": "string",
+          "description": "Display name of the uploading teacher/faculty."
+        },
+        "uploadType": {
+          "type": "string",
+          "enum": ["VIDEO", "DPP", "MATERIAL"],
+          "description": "Type of uploaded item: VIDEO, DPP, or MATERIAL."
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the uploaded video lecture, DPP sheet, or study material."
+        },
+        "subject": {
+          "type": "string",
+          "description": "Subject name (PHYSICS, CHEMISTRY, MATHEMATICS, BIOLOGY)."
+        },
+        "chapterTitle": {
+          "type": "string",
+          "description": "Chapter title under which this item is organized."
+        },
+        "courseId": {
+          "type": "string",
+          "description": "Target course batch ID (e.g. c_arjuna_jee, c_lakshya_neet)."
+        },
+        "resourceUrl": {
+          "type": "string",
+          "description": "Video URL, Google Drive URL, PDF link, or document URI."
+        },
+        "materialCategory": {
+          "type": "string",
+          "description": "Category label (e.g. Video Lecture, DPP Sheet, PDF Class Notes, Formula Sheet, Google Drive Folder, PYQ Booklet)."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed summary, key lecture points, or study material description."
+        },
+        "durationMinutes": {
+          "type": "integer",
+          "description": "Lecture duration or DPP time limit in minutes."
+        },
+        "dppPayloadJson": {
+          "type": "string",
+          "description": "Optional serialized JSON array of custom MCQ questions when uploadType is DPP."
+        },
+        "isPublished": {
+          "type": "boolean",
+          "description": "Whether the uploaded item is published and visible to students."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the upload was created (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the upload was last updated (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "authorId",
+        "authorName",
+        "uploadType",
+        "title",
+        "subject",
+        "chapterTitle",
+        "courseId",
+        "resourceUrl",
+        "materialCategory",
+        "description",
+        "durationMinutes",
+        "isPublished",
+        "createdAt",
+        "updatedAt"
+      ]
     }
   },
   "firestore": {
@@ -229,6 +315,12 @@
         "$ref": "#/entities/StudentDoubt"
       },
       "description": "Stores each authenticated student's posted academic doubts and AI Tutor solutions."
+    },
+    "/teacher_uploads/{uploadId}": {
+      "schema": {
+        "$ref": "#/entities/TeacherUpload"
+      },
+      "description": "Stores published teacher-uploaded video lectures, DPP practice sets, and study materials."
     }
   }
 }

@@ -47,16 +47,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 private const val TAG = "Auth"
-private const val DEFAULT_WEB_CLIENT_ID_RES = "default_web_client_id"
 
 private fun isFirebaseInitialized(context: Context): Boolean {
     return runCatching { FirebaseApp.getApps(context).isNotEmpty() }.getOrDefault(false)
-}
-
-private fun resolveWebClientId(context: Context): String? {
-    val resId = context.resources.getIdentifier(DEFAULT_WEB_CLIENT_ID_RES, "string", context.packageName)
-    if (resId == 0) return null
-    return runCatching { context.getString(resId) }.getOrNull()?.takeIf { it.isNotBlank() }
 }
 
 fun attemptAutoSignIn(
@@ -74,8 +67,8 @@ fun attemptAutoSignIn(
         onAuthSuccess()
         return
     }
-    val clientId = resolveWebClientId(context)
-    if (clientId == null) {
+    val clientId = runCatching { context.getString(R.string.default_web_client_id) }.getOrNull()
+    if (clientId.isNullOrBlank()) {
         onUnauthenticated()
         return
     }
@@ -120,8 +113,8 @@ fun onGoogleSignInClicked(
         onAuthError("Cloud configuration (google-services.json) is not bundled in this APK build. Tap 'Continue in Offline Study Mode' below.")
         return
     }
-    val clientId = resolveWebClientId(context)
-    if (clientId == null) {
+    val clientId = runCatching { context.getString(R.string.default_web_client_id) }.getOrNull()
+    if (clientId.isNullOrBlank()) {
         onAuthError("Google Sign-In configuration missing: default_web_client_id not found. You can continue in Offline Study Mode below.")
         return
     }

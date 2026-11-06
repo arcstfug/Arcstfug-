@@ -223,3 +223,41 @@ test("Authenticated user: can create, update, and query their own StudentDoubts"
       .get()
   );
 });
+
+test("Authenticated teacher: can upload and list published TeacherUpload items, while other users cannot delete them", async () => {
+  const aliceDb = testEnv.authenticatedContext(ALICE_UID).firestore();
+  const bobDb = testEnv.authenticatedContext(BOB_UID).firestore();
+  const now = new Date();
+  const uploadRef = aliceDb.collection("teacher_uploads").doc("up_video_1");
+
+  await assertSucceeds(
+    uploadRef.set({
+      authorId: ALICE_UID,
+      authorName: "Prof. Verma",
+      uploadType: "VIDEO",
+      title: "Lec 04: Circular Motion & Centripetal Force",
+      subject: "PHYSICS",
+      chapterTitle: "Chapter 7: Circular Motion",
+      courseId: "c_arjuna_jee",
+      resourceUrl: "https://drive.google.com/drive/folders/1-Gii-7kSrT4Do8x6TkO3mhy4IxeP2o57",
+      materialCategory: "Video Lecture",
+      description: "Complete derivation of radial and tangential acceleration with banking of roads.",
+      durationMinutes: 55,
+      isPublished: true,
+      createdAt: now,
+      updatedAt: now,
+    })
+  );
+
+  await assertSucceeds(
+    bobDb
+      .collection("teacher_uploads")
+      .where("isPublished", "==", true)
+      .get()
+  );
+
+  await assertFails(
+    bobDb.collection("teacher_uploads").doc("up_video_1").delete()
+  );
+});
+

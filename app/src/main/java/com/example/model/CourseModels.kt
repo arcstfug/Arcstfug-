@@ -71,7 +71,8 @@ data class Lecture(
     val isBookmarked: Boolean = false,
     val notesSummary: List<String> = emptyList(),
     val timestamps: List<LectureTimestamp> = emptyList(),
-    val dppId: String? = null
+    val dppId: String? = null,
+    val videoUrl: String? = null
 )
 
 data class Chapter(
@@ -109,6 +110,35 @@ object ExternalStudyLinks {
     const val PHYSICS_DRIVE_URL = "https://drive.google.com/drive/folders/1-Gii-7kSrT4Do8x6TkO3mhy4IxeP2o57"
     const val ALL_INDIA_TEST_SERIES_URL = "https://deltastudy.fun/missionjeet/251"
 }
+
+data class StudyMaterial(
+    val id: String,
+    val title: String,
+    val subject: SubjectType,
+    val chapterTitle: String,
+    val courseId: String = "c_arjuna_jee",
+    val category: String,
+    val description: String,
+    val resourceUrl: String,
+    val authorName: String = "ARCSTFUG Faculty",
+    val uploadedAtLabel: String = "Official Vault",
+    val isTeacherUpload: Boolean = false
+)
+
+data class TeacherUploadItem(
+    val id: String,
+    val authorId: String,
+    val authorName: String,
+    val uploadType: String, // "VIDEO", "DPP", "MATERIAL"
+    val title: String,
+    val subject: SubjectType,
+    val chapterTitle: String,
+    val courseId: String,
+    val resourceUrl: String,
+    val materialCategory: String,
+    val description: String,
+    val durationMinutes: Int
+)
 
 data class TestExam(
     val id: String,
@@ -154,3 +184,4 @@ data class DoubtQuery(
     val facultyReply: String?,
     val timestamp: String
 )
+

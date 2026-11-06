@@ -33,6 +33,7 @@ fun EduBottomBar(
                 MainNavTab.PRACTICE -> Icons.Filled.AssignmentTurnedIn to Icons.Outlined.Assignment
                 MainNavTab.PROFILE -> Icons.Filled.Person to Icons.Outlined.PersonOutline
                 MainNavTab.BATCHES -> Icons.Filled.School to Icons.Outlined.School
+                MainNavTab.TEACHER_ADMIN -> Icons.Filled.CloudUpload to Icons.Outlined.CloudUpload
             }
 
             NavigationBarItem(

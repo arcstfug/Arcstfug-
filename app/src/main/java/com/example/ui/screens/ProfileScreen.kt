@@ -1,5 +1,8 @@
 package com.example.ui.screens
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -18,9 +21,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -39,11 +44,15 @@ fun ProfileScreen(
     onPostDoubt: (String, SubjectType) -> Unit,
     onGenerateStudyPlan: (Int, SubjectType, String) -> Unit,
     onUpdateProfile: (String, String, String, String, String) -> Unit = { _, _, _, _, _ -> },
+    onOpenTeacherAdmin: () -> Unit = {},
+    userUid: String? = null,
     userEmail: String? = null,
     onSignOut: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
+    var uidCopied by remember { mutableStateOf(false) }
     var showEditProfileDialog by remember { mutableStateOf(false) }
     var editName by remember(userProfile.name) { mutableStateOf(userProfile.name) }
     var editTargetExam by remember(userProfile.targetExam) { mutableStateOf(userProfile.targetExam) }
@@ -141,29 +150,79 @@ fun ProfileScreen(
                         }
                     }
 
-                    // Cloud Sync Badge + Edit Student Profile & Sign Out Row
-                    if (!userEmail.isNullOrBlank()) {
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = EmeraldSuccess.copy(alpha = 0.12f)
+                    // Cloud Sync Badge + Firebase Auth UID & Project ID Box
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("firebase_uid_info_card")
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    imageVector = Icons.Filled.CloudDone,
-                                    contentDescription = "Cloud Synced",
-                                    tint = EmeraldSuccess,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                Text(
-                                    text = "Cloud Synced • $userEmail",
-                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                                    color = EmeraldSuccess
-                                )
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = if (!userUid.isNullOrBlank()) Icons.Filled.CloudDone else Icons.Filled.Key,
+                                        contentDescription = "Firebase UID",
+                                        tint = if (!userUid.isNullOrBlank()) EmeraldSuccess else IndigoPrimary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Text(
+                                        text = if (!userEmail.isNullOrBlank()) "Firebase Auth • $userEmail" else "Firebase Cloud Identity",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = if (!userUid.isNullOrBlank()) EmeraldSuccess else MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
+
+                                val copyableUid = userUid ?: "gen-lang-client-0387332814"
+                                FilledTonalButton(
+                                    onClick = {
+                                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                                        clipboard?.setPrimaryClip(ClipData.newPlainText("Firebase UID", copyableUid))
+                                        uidCopied = true
+                                    },
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                    modifier = Modifier.testTag("copy_firebase_uid_button")
+                                ) {
+                                    Icon(
+                                        imageVector = if (uidCopied) Icons.Filled.Check else Icons.Filled.ContentCopy,
+                                        contentDescription = "Copy Firebase UID",
+                                        modifier = Modifier.size(13.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = if (uidCopied) "Copied!" else if (!userUid.isNullOrBlank()) "Copy UID" else "Copy Project ID",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
                             }
+
+                            Text(
+                                text = "Firebase User UID: ${userUid ?: "Sign in with Google on Auth screen to view live UID"}",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontFamily = FontFamily.Monospace,
+                                    fontWeight = FontWeight.SemiBold
+                                ),
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.testTag("firebase_uid_text")
+                            )
+                            Text(
+                                text = "Project ID: gen-lang-client-0387332814 • App ID: 1:238525046354:android:350748a7ff30b2e80dc98b",
+                                style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
 
@@ -210,6 +269,28 @@ fun ProfileScreen(
                             Spacer(modifier = Modifier.width(6.dp))
                             Text("Edit Student Profile", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
+                    }
+
+                    Button(
+                        onClick = onOpenTeacherAdmin,
+                        colors = ButtonDefaults.buttonColors(containerColor = IndigoPrimary),
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("open_teacher_admin_profile_btn")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.CloudUpload,
+                            contentDescription = "Teacher Admin Panel",
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Open Teacher Admin Panel (Upload Video, DPP & Material)",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
 
                     HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))

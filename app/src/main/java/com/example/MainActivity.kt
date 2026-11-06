@@ -103,6 +103,7 @@ fun AppRoot() {
         )
         MainAppContent(
             viewModel = eduViewModel,
+            userUid = activeUser?.uid,
             userEmail = activeUser?.email,
             onSignOut = {
                 signOut(
@@ -122,6 +123,7 @@ fun AppRoot() {
 @Composable
 fun MainAppContent(
     viewModel: EduViewModel = viewModel(),
+    userUid: String? = null,
     userEmail: String? = null,
     onSignOut: (() -> Unit)? = null
 ) {
@@ -133,6 +135,8 @@ fun MainAppContent(
     val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
     val mockTests by viewModel.mockTests.collectAsStateWithLifecycle()
     val doubts by viewModel.doubts.collectAsStateWithLifecycle()
+    val studyMaterials by viewModel.studyMaterials.collectAsStateWithLifecycle()
+    val teacherUploads by viewModel.teacherUploads.collectAsStateWithLifecycle()
 
     val doubtAiState by viewModel.doubtAiState.collectAsStateWithLifecycle()
     val lectureAiSummaryState by viewModel.lectureAiSummaryState.collectAsStateWithLifecycle()
@@ -143,6 +147,7 @@ fun MainAppContent(
     val activeLectureId by viewModel.activeLectureId.collectAsStateWithLifecycle()
     val activeDppSolvingId by viewModel.activeDppSolvingId.collectAsStateWithLifecycle()
     val activeDppResultId by viewModel.activeDppResultId.collectAsStateWithLifecycle()
+    val isTeacherAdminOpen by viewModel.isTeacherAdminOpen.collectAsStateWithLifecycle()
 
     val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
     val playbackSpeed by viewModel.playbackSpeed.collectAsStateWithLifecycle()
@@ -261,6 +266,45 @@ fun MainAppContent(
             )
         }
 
+        // Teacher / Faculty Admin Studio Screen
+        isTeacherAdminOpen -> {
+            Scaffold(
+                modifier = Modifier.fillMaxSize(),
+                snackbarHost = { SnackbarHost(snackbarHostState) }
+            ) { adminPadding ->
+                TeacherAdminScreen(
+                    courses = courses,
+                    studyMaterials = studyMaterials,
+                    teacherUploads = teacherUploads,
+                    defaultInstructorName = userProfile.name,
+                    userUid = userUid,
+                    userEmail = userEmail,
+                    onUploadVideo = { title, subj, chap, cid, instr, dur, url, notes ->
+                        viewModel.uploadTeacherVideo(title, subj, chap, cid, instr, dur, url, notes)
+                    },
+                    onUploadDpp = { title, subj, chap, cid, time, source, qs ->
+                        viewModel.uploadTeacherDpp(title, subj, chap, cid, time, source, qs)
+                    },
+                    onUploadMaterial = { title, subj, chap, cid, cat, url, desc, author ->
+                        viewModel.uploadTeacherMaterial(title, subj, chap, cid, cat, url, desc, author)
+                    },
+                    onDeleteUpload = { viewModel.deleteTeacherUpload(it) },
+                    onOpenLecture = {
+                        viewModel.closeTeacherAdmin()
+                        viewModel.openLecture(it)
+                    },
+                    onStartDpp = {
+                        viewModel.closeTeacherAdmin()
+                        viewModel.startDpp(it)
+                    },
+                    onBack = { viewModel.closeTeacherAdmin() },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(adminPadding)
+                )
+            }
+        }
+
         // Standard Compose Navigation Scaffold with Home, Lectures, Practice, and Profile
         else -> {
             Scaffold(
@@ -296,6 +340,8 @@ fun MainAppContent(
                             onOpenBatch = { viewModel.openBatch(it) },
                             onOpenLecture = { viewModel.openLecture(it) },
                             onStartDpp = { viewModel.startDpp(it) },
+                            studyMaterials = studyMaterials,
+                            onOpenTeacherAdmin = { viewModel.openTeacherAdmin() },
                             modifier = Modifier.fillMaxSize()
                         )
                     }
@@ -337,6 +383,8 @@ fun MainAppContent(
                             onUpdateProfile = { name, targetExam, classLevel, studentGoal, bio ->
                                 viewModel.updateUserProfile(name, targetExam, classLevel, studentGoal, bio)
                             },
+                            onOpenTeacherAdmin = { viewModel.openTeacherAdmin() },
+                            userUid = userUid,
                             userEmail = userEmail,
                             onSignOut = onSignOut,
                             modifier = Modifier.fillMaxSize()
@@ -351,8 +399,40 @@ fun MainAppContent(
                             modifier = Modifier.fillMaxSize()
                         )
                     }
+
+                    composable(AppRoutes.ROUTE_TEACHER_ADMIN) {
+                        TeacherAdminScreen(
+                            courses = courses,
+                            studyMaterials = studyMaterials,
+                            teacherUploads = teacherUploads,
+                            defaultInstructorName = userProfile.name,
+                            userUid = userUid,
+                            userEmail = userEmail,
+                            onUploadVideo = { title, subj, chap, cid, instr, dur, url, notes ->
+                                viewModel.uploadTeacherVideo(title, subj, chap, cid, instr, dur, url, notes)
+                            },
+                            onUploadDpp = { title, subj, chap, cid, time, source, qs ->
+                                viewModel.uploadTeacherDpp(title, subj, chap, cid, time, source, qs)
+                            },
+                            onUploadMaterial = { title, subj, chap, cid, cat, url, desc, author ->
+                                viewModel.uploadTeacherMaterial(title, subj, chap, cid, cat, url, desc, author)
+                            },
+                            onDeleteUpload = { viewModel.deleteTeacherUpload(it) },
+                            onOpenLecture = {
+                                viewModel.closeTeacherAdmin()
+                                viewModel.openLecture(it)
+                            },
+                            onStartDpp = {
+                                viewModel.closeTeacherAdmin()
+                                viewModel.startDpp(it)
+                            },
+                            onBack = { navigateToTab(MainNavTab.HOME) },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
                 }
             }
         }
     }
 }
+

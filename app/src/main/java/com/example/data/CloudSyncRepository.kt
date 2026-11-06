@@ -5,6 +5,7 @@ import com.example.R
 import com.example.model.DppAttemptDoc
 import com.example.model.StudentDoubtDoc
 import com.example.model.StudentProfileDoc
+import com.example.model.TeacherUploadDoc
 import com.example.util.OperationType
 import com.example.util.handleFirestoreError
 import com.google.firebase.Firebase
@@ -360,4 +361,94 @@ class CloudSyncRepository(
             Result.failure(e)
         }
     }
+
+    // -------------------------------------------------------------------------
+    // 4. Teacher Admin Panel Uploads (/teacher_uploads/{uploadId})
+    // -------------------------------------------------------------------------
+
+    fun observePublishedTeacherUploads(): Flow<List<TeacherUploadDoc>> {
+        val path = "teacher_uploads"
+        return db.collection("teacher_uploads")
+            .whereEqualTo("isPublished", true)
+            .snapshots()
+            .map { snapshot ->
+                snapshot.toObjects(TeacherUploadDoc::class.java, DocumentSnapshot.ServerTimestampBehavior.ESTIMATE)
+            }
+            .catch { error ->
+                val firestoreError = generateSequence(error) { it.cause }
+                    .filterIsInstance<FirebaseFirestoreException>()
+                    .firstOrNull()
+                if (firestoreError == null && error is CancellationException) throw error
+                val exceptionToLog = firestoreError ?: (error as? Exception)
+                if (exceptionToLog != null) {
+                    handleFirestoreError(exceptionToLog, OperationType.LIST, path)
+                }
+                throw error
+            }
+    }
+
+    suspend fun saveTeacherUpload(
+        uploadId: String,
+        authorName: String,
+        uploadType: String,
+        title: String,
+        subject: String,
+        chapterTitle: String,
+        courseId: String,
+        resourceUrl: String,
+        materialCategory: String,
+        description: String,
+        durationMinutes: Int,
+        dppPayloadJson: String? = null,
+        isPublished: Boolean = true
+    ): Result<String> {
+        val uid = requireUserId()
+        val safeId = uploadId.replace("[^a-zA-Z0-9_\\-]".toRegex(), "_").take(100).ifEmpty { "up_${System.currentTimeMillis()}" }
+        val docRef = db.collection("teacher_uploads").document(safeId)
+        val normalizedType = when (uploadType.uppercase()) {
+            "VIDEO", "DPP", "MATERIAL" -> uploadType.uppercase()
+            else -> "MATERIAL"
+        }
+        return try {
+            val payload = mapOf<String, Any?>(
+                "authorId" to uid,
+                "authorName" to authorName.trim().ifEmpty { "ARCSTFUG Faculty" }.take(100),
+                "uploadType" to normalizedType,
+                "title" to title.trim().ifEmpty { "Uploaded Content" }.take(200),
+                "subject" to subject.trim().ifEmpty { "PHYSICS" }.take(50),
+                "chapterTitle" to chapterTitle.trim().ifEmpty { "General Chapter" }.take(200),
+                "courseId" to courseId.trim().ifEmpty { "c_arjuna_jee" }.take(100),
+                "resourceUrl" to resourceUrl.trim().take(1000),
+                "materialCategory" to materialCategory.trim().ifEmpty { "Study Material" }.take(100),
+                "description" to description.trim().ifEmpty { "Uploaded via ARCSTFUG Teacher Studio" }.take(2000),
+                "durationMinutes" to durationMinutes.toLong().coerceIn(0L, 600L),
+                "dppPayloadJson" to dppPayloadJson?.take(50000),
+                "isPublished" to isPublished,
+                "createdAt" to FieldValue.serverTimestamp(),
+                "updatedAt" to FieldValue.serverTimestamp()
+            ).filterValues { it != null }
+            docRef.set(payload).await()
+            Result.success(safeId)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            handleFirestoreError(e, OperationType.CREATE, docRef.path)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun deleteTeacherUpload(uploadId: String): Result<Unit> {
+        val safeId = uploadId.replace("[^a-zA-Z0-9_\\-]".toRegex(), "_").take(100)
+        val docRef = db.collection("teacher_uploads").document(safeId)
+        return try {
+            docRef.delete().await()
+            Result.success(Unit)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            handleFirestoreError(e, OperationType.DELETE, docRef.path)
+            Result.failure(e)
+        }
+    }
 }
+

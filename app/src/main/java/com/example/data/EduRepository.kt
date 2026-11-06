@@ -5,6 +5,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import org.json.JSONArray
+import org.json.JSONObject
 
 class EduRepository {
 
@@ -37,6 +39,12 @@ class EduRepository {
 
     private val _doubts = MutableStateFlow(createInitialDoubts())
     val doubts: StateFlow<List<DoubtQuery>> = _doubts.asStateFlow()
+
+    private val _studyMaterials = MutableStateFlow(createInitialStudyMaterials())
+    val studyMaterials: StateFlow<List<StudyMaterial>> = _studyMaterials.asStateFlow()
+
+    private val _teacherUploads = MutableStateFlow<List<TeacherUploadItem>>(emptyList())
+    val teacherUploads: StateFlow<List<TeacherUploadItem>> = _teacherUploads.asStateFlow()
 
     fun updateUserProfile(
         name: String,
@@ -224,8 +232,72 @@ class EduRepository {
         }
     }
 
+    fun addCustomLecture(lecture: Lecture) {
+        _courses.update { courseList ->
+            val alreadyExists = courseList.any { c ->
+                c.subjects.any { s -> s.chapters.any { ch -> ch.lectures.any { it.id == lecture.id } } }
+            }
+            if (alreadyExists) return@update courseList
+
+            var added = false
+            val updated = courseList.map { course ->
+                if (!added && (course.id == lecture.courseId || course.subjects.any { it.type == lecture.subject })) {
+                    val hasSubj = course.subjects.any { it.type == lecture.subject }
+                    if (hasSubj) {
+                        course.copy(
+                            subjects = course.subjects.map { subj ->
+                                if (!added && subj.type == lecture.subject) {
+                                    added = true
+                                    val matchingChapIdx = subj.chapters.indexOfFirst {
+                                        it.title.equals(lecture.chapterTitle, ignoreCase = true) ||
+                                            it.id == lecture.chapterId
+                                    }
+                                    if (matchingChapIdx >= 0) {
+                                        subj.copy(
+                                            chapters = subj.chapters.mapIndexed { idx, chap ->
+                                                if (idx == matchingChapIdx) {
+                                                    chap.copy(lectures = listOf(lecture) + chap.lectures)
+                                                } else chap
+                                            }
+                                        )
+                                    } else if (subj.chapters.isNotEmpty()) {
+                                        val newChap = Chapter(
+                                            id = lecture.chapterId.ifBlank { "ch_custom_${subj.chapters.size + 1}" },
+                                            subject = lecture.subject,
+                                            title = lecture.chapterTitle.ifBlank { "Teacher Uploaded Lectures" },
+                                            order = subj.chapters.size + 1,
+                                            lectures = listOf(lecture),
+                                            dpps = emptyList()
+                                        )
+                                        subj.copy(chapters = listOf(newChap) + subj.chapters)
+                                    } else {
+                                        val newChap = Chapter(
+                                            id = lecture.chapterId.ifBlank { "ch_custom_1" },
+                                            subject = lecture.subject,
+                                            title = lecture.chapterTitle.ifBlank { "Teacher Uploaded Lectures" },
+                                            order = 1,
+                                            lectures = listOf(lecture),
+                                            dpps = emptyList()
+                                        )
+                                        subj.copy(chapters = listOf(newChap))
+                                    }
+                                } else subj
+                            }
+                        )
+                    } else course
+                } else course
+            }
+            updated
+        }
+    }
+
     fun addCustomDpp(dpp: Dpp) {
         _courses.update { courseList ->
+            val alreadyExists = courseList.any { c ->
+                c.subjects.any { s -> s.chapters.any { ch -> ch.dpps.any { it.id == dpp.id } } }
+            }
+            if (alreadyExists) return@update courseList
+
             var added = false
             val updated = courseList.map { course ->
                 if (!added && course.subjects.any { it.type == dpp.subject }) {
@@ -233,9 +305,12 @@ class EduRepository {
                         subjects = course.subjects.map { subj ->
                             if (!added && subj.type == dpp.subject && subj.chapters.isNotEmpty()) {
                                 added = true
+                                val matchingIdx = subj.chapters.indexOfFirst {
+                                    it.title.equals(dpp.chapterTitle, ignoreCase = true)
+                                }.let { if (it >= 0) it else 0 }
                                 subj.copy(
                                     chapters = subj.chapters.mapIndexed { idx, chap ->
-                                        if (idx == 0) chap.copy(dpps = listOf(dpp) + chap.dpps) else chap
+                                        if (idx == matchingIdx) chap.copy(dpps = listOf(dpp) + chap.dpps) else chap
                                     }
                                 )
                             } else subj
@@ -264,6 +339,211 @@ class EduRepository {
                     }
                 } else updated
             } else updated
+        }
+    }
+
+    fun addStudyMaterial(material: StudyMaterial) {
+        _studyMaterials.update { current ->
+            val exists = current.any { it.id == material.id }
+            if (exists) {
+                current.map { if (it.id == material.id) material else it }
+            } else {
+                listOf(material) + current
+            }
+        }
+    }
+
+    fun upsertTeacherUploadItem(item: TeacherUploadItem) {
+        _teacherUploads.update { current ->
+            val exists = current.any { it.id == item.id }
+            if (exists) {
+                current.map { if (it.id == item.id) item else it }
+            } else {
+                listOf(item) + current
+            }
+        }
+    }
+
+    fun removeTeacherUploadById(uploadId: String) {
+        _teacherUploads.update { current -> current.filterNot { it.id == uploadId } }
+        _studyMaterials.update { current -> current.filterNot { it.id == uploadId } }
+        _courses.update { courseList ->
+            courseList.map { course ->
+                course.copy(
+                    subjects = course.subjects.map { subj ->
+                        subj.copy(
+                            chapters = subj.chapters.map { chap ->
+                                chap.copy(
+                                    lectures = chap.lectures.filterNot { it.id == uploadId },
+                                    dpps = chap.dpps.filterNot { it.id == uploadId }
+                                )
+                            }
+                        )
+                    }
+                )
+            }
+        }
+    }
+
+    fun applyCloudTeacherUploads(uploads: List<TeacherUploadDoc>) {
+        val sorted = uploads.sortedByDescending { it.updatedAt?.seconds ?: 0L }
+        val items = sorted.map { doc ->
+            val subjectEnum = SubjectType.entries.find { it.name.equals(doc.subject, ignoreCase = true) }
+                ?: SubjectType.PHYSICS
+            TeacherUploadItem(
+                id = doc.id,
+                authorId = doc.authorId,
+                authorName = doc.authorName,
+                uploadType = doc.uploadType,
+                title = doc.title,
+                subject = subjectEnum,
+                chapterTitle = doc.chapterTitle,
+                courseId = doc.courseId,
+                resourceUrl = doc.resourceUrl,
+                materialCategory = doc.materialCategory,
+                description = doc.description,
+                durationMinutes = doc.durationMinutes.toInt()
+            )
+        }
+        _teacherUploads.value = items
+
+        sorted.forEach { doc ->
+            val subjectEnum = SubjectType.entries.find { it.name.equals(doc.subject, ignoreCase = true) }
+                ?: SubjectType.PHYSICS
+            when (doc.uploadType.uppercase()) {
+                "VIDEO" -> {
+                    val notes = doc.description.lines().map { it.trim() }.filter { it.isNotEmpty() }
+                    val lec = Lecture(
+                        id = doc.id,
+                        courseId = doc.courseId.ifBlank { "c_arjuna_jee" },
+                        subject = subjectEnum,
+                        chapterId = "ch_teacher_${doc.chapterTitle.hashCode()}",
+                        chapterTitle = doc.chapterTitle.ifBlank { "Faculty Video Lectures" },
+                        title = doc.title,
+                        lectureNumber = getAllLectures().size + 1,
+                        instructor = doc.authorName.ifBlank { "ARCSTFUG Faculty" },
+                        durationMinutes = doc.durationMinutes.toInt().coerceAtLeast(10),
+                        notesSummary = if (notes.isNotEmpty()) notes else listOf(doc.description),
+                        timestamps = listOf(
+                            LectureTimestamp(0, "00:00", "Introduction & Core Concepts"),
+                            LectureTimestamp(600, "10:00", "Formula Derivations & Key Examples")
+                        ),
+                        videoUrl = doc.resourceUrl.takeIf { it.isNotBlank() }
+                    )
+                    addCustomLecture(lec)
+                }
+                "DPP" -> {
+                    val parsedQuestions = parseTeacherDppQuestions(doc.dppPayloadJson, doc.title, doc.chapterTitle)
+                    val dpp = Dpp(
+                        id = doc.id,
+                        number = getAllDpps().size + 1,
+                        title = doc.title,
+                        subject = subjectEnum,
+                        chapterTitle = doc.chapterTitle.ifBlank { "Teacher Uploaded DPPs" },
+                        courseId = doc.courseId.ifBlank { "c_arjuna_jee" },
+                        questions = parsedQuestions,
+                        timeLimitMinutes = doc.durationMinutes.toInt().coerceIn(5, 180),
+                        status = DppStatus.PENDING,
+                        sourceBook = doc.materialCategory.ifBlank { "Teacher DPP (${doc.authorName})" }
+                    )
+                    addCustomDpp(dpp)
+                }
+                else -> {
+                    val mat = StudyMaterial(
+                        id = doc.id,
+                        title = doc.title,
+                        subject = subjectEnum,
+                        chapterTitle = doc.chapterTitle,
+                        courseId = doc.courseId.ifBlank { "c_arjuna_jee" },
+                        category = doc.materialCategory.ifBlank { "PDF Class Notes" },
+                        description = doc.description,
+                        resourceUrl = doc.resourceUrl,
+                        authorName = doc.authorName.ifBlank { "ARCSTFUG Faculty" },
+                        uploadedAtLabel = "Synced from Teacher Studio",
+                        isTeacherUpload = true
+                    )
+                    addStudyMaterial(mat)
+                }
+            }
+        }
+    }
+
+    private fun parseTeacherDppQuestions(
+        jsonStr: String?,
+        fallbackTitle: String,
+        fallbackTopic: String
+    ): List<Question> {
+        if (jsonStr.isNullOrBlank()) {
+            return listOf(
+                Question(
+                    id = "q_default_${fallbackTitle.hashCode()}",
+                    questionText = "Practice problem from $fallbackTitle ($fallbackTopic)",
+                    options = listOf("Option (a)", "Option (b)", "Option (c)", "Option (d)"),
+                    correctOptionIndex = 0,
+                    explanation = "Refer to the faculty solution notes for $fallbackTitle.",
+                    hint = "Review the core formula from $fallbackTopic.",
+                    topic = fallbackTopic
+                )
+            )
+        }
+        return try {
+            val arr = JSONArray(jsonStr)
+            val result = mutableListOf<Question>()
+            for (i in 0 until arr.length()) {
+                val obj: JSONObject = arr.getJSONObject(i)
+                val qText = obj.optString("questionText", "Question ${i + 1}")
+                val optsArr = obj.optJSONArray("options")
+                val opts = if (optsArr != null && optsArr.length() >= 4) {
+                    (0 until 4).map { optsArr.optString(it, "Option ${it + 1}") }
+                } else {
+                    listOf("Option A", "Option B", "Option C", "Option D")
+                }
+                val correctIndicesArr = obj.optJSONArray("correctOptionIndices")
+                val correctSet = if (correctIndicesArr != null && correctIndicesArr.length() > 0) {
+                    (0 until correctIndicesArr.length()).map { correctIndicesArr.optInt(it, 0).coerceIn(0, 3) }.toSet()
+                } else {
+                    setOf(obj.optInt("correctOptionIndex", 0).coerceIn(0, 3))
+                }
+                val primaryIdx = correctSet.minOrNull() ?: 0
+                result.add(
+                    Question(
+                        id = obj.optString("id", "tq_${i}_${qText.hashCode()}"),
+                        questionText = qText,
+                        options = opts,
+                        correctOptionIndex = primaryIdx,
+                        explanation = obj.optString("explanation", "Detailed faculty solution."),
+                        hint = obj.optString("hint", "Apply the chapter concept."),
+                        topic = obj.optString("topic", fallbackTopic),
+                        correctOptionIndices = correctSet,
+                        isMultiSelect = correctSet.size > 1 || obj.optBoolean("isMultiSelect", false)
+                    )
+                )
+            }
+            if (result.isEmpty()) {
+                listOf(
+                    Question(
+                        id = "q_fallback_${fallbackTitle.hashCode()}",
+                        questionText = "Practice problem from $fallbackTitle",
+                        options = listOf("Option (a)", "Option (b)", "Option (c)", "Option (d)"),
+                        correctOptionIndex = 0,
+                        explanation = "Refer to faculty notes.",
+                        hint = "Check core definitions.",
+                        topic = fallbackTopic
+                    )
+                )
+            } else result
+        } catch (e: Exception) {
+            listOf(
+                Question(
+                    id = "q_err_${fallbackTitle.hashCode()}",
+                    questionText = "Practice problem from $fallbackTitle",
+                    options = listOf("Option (a)", "Option (b)", "Option (c)", "Option (d)"),
+                    correctOptionIndex = 0,
+                    explanation = "Refer to faculty notes.",
+                    hint = "Check core definitions.",
+                    topic = fallbackTopic
+                )
+            )
         }
     }
 
@@ -923,4 +1203,58 @@ class EduRepository {
             )
         )
     }
+
+    private fun createInitialStudyMaterials(): List<StudyMaterial> {
+        return listOf(
+            StudyMaterial(
+                id = "mat_phy_drive_vault",
+                title = "Physics Complete Study Material (Google Drive Vault)",
+                subject = SubjectType.PHYSICS,
+                chapterTitle = "All Chapters (Mechanics, Optics, Waves & Thermodynamics)",
+                courseId = "c_arjuna_jee",
+                category = "Google Drive Folder",
+                description = "Chapterwise Handwritten Notes, H.C. Verma Part 1 Solutions, Formula Sheets, PYQ Booklets & Video Lectures Folder.",
+                resourceUrl = ExternalStudyLinks.PHYSICS_DRIVE_URL,
+                authorName = "Prof. H.C. Verma & ARCSTFUG Physics Faculty",
+                uploadedAtLabel = "Official Vault"
+            ),
+            StudyMaterial(
+                id = "mat_hcv_vol1_book",
+                title = "Concepts of Physics (H.C. Verma) Part 1 — Complete Chapterwise Booklet",
+                subject = SubjectType.PHYSICS,
+                chapterTitle = "Chapters 1 to 22 (Mechanics, Waves, Optics & Heat)",
+                courseId = "c_arjuna_jee",
+                category = "PDF Class Notes",
+                description = "Canonical Objective I (Single Choice), Objective II (Multiple Correct), and Worked Out Examples for JEE Main & Advanced.",
+                resourceUrl = ExternalStudyLinks.PHYSICS_DRIVE_URL,
+                authorName = "Prof. H.C. Verma",
+                uploadedAtLabel = "Official Textbook Vault"
+            ),
+            StudyMaterial(
+                id = "mat_cengage_algebra_book",
+                title = "Cengage Algebra (G. Tewani) — JEE Advanced DPP & Concept Notes",
+                subject = SubjectType.MATHEMATICS,
+                chapterTitle = "Chapters 1 to 11 (Quadratic, Complex, Matrices, PnC, Probability)",
+                courseId = "c_arjuna_jee",
+                category = "PYQ Booklet",
+                description = "Complete Algebra formula handbook, solved illustrations, and chapterwise exercise sets for JEE Advanced.",
+                resourceUrl = ExternalStudyLinks.ALL_INDIA_TEST_SERIES_URL,
+                authorName = "G. Tewani & Amit Sir",
+                uploadedAtLabel = "Official Textbook Vault"
+            ),
+            StudyMaterial(
+                id = "mat_aits_mission_jeet",
+                title = "All-India Test Series (Mission JEET CBT Exam Portal)",
+                subject = SubjectType.CHEMISTRY,
+                chapterTitle = "Full Syllabus CBT Mock Tests",
+                courseId = "c_arjuna_jee",
+                category = "Test Series Link",
+                description = "Live NTA-pattern JEE & NEET Computer Based Test Series with instant percentile and rank predictor.",
+                resourceUrl = ExternalStudyLinks.ALL_INDIA_TEST_SERIES_URL,
+                authorName = "ARCSTFUG Exam Cell",
+                uploadedAtLabel = "Live Portal"
+            )
+        )
+    }
 }
+

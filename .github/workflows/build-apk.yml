@@ -72,6 +72,54 @@ jobs:
           fi
           echo "Confirmed ./debug.keystore exists."
 
+      - name: Ensure google-services.json exists for CI build
+        run: |
+          set -euo pipefail
+          if [ ! -f "app/google-services.json" ]; then
+            echo "Generating fallback app/google-services.json for CI build..."
+            cat << 'EOF' > app/google-services.json
+          {
+            "project_info": {
+              "project_number": "238525046354",
+              "project_id": "gen-lang-client-0387332814",
+              "storage_bucket": "gen-lang-client-0387332814.firebasestorage.app"
+            },
+            "client": [
+              {
+                "client_info": {
+                  "mobilesdk_app_id": "1:238525046354:android:350748a7ff30b2e80dc98b",
+                  "android_client_info": {
+                    "package_name": "com.aistudio.arcstfug.hitkmt"
+                  }
+                },
+                "oauth_client": [
+                  {
+                    "client_id": "238525046354-ciwebclient.apps.googleusercontent.com",
+                    "client_type": 3
+                  }
+                ],
+                "api_key": [
+                  {
+                    "current_key": "AIzaSyDummyKeyForGitHubActionsCiBuild000"
+                  }
+                ],
+                "services": {
+                  "appinvite_service": {
+                    "other_platform_oauth_client": [
+                      {
+                        "client_id": "238525046354-ciwebclient.apps.googleusercontent.com",
+                        "client_type": 3
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "configuration_version": "1"
+          }
+          EOF
+          fi
+
       - name: Build debug APK
         run: gradle :app:assembleDebug --stacktrace --no-daemon
 

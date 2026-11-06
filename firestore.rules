@@ -71,6 +71,25 @@ service cloud.firestore {
              data.updatedAt is timestamp && data.updatedAt <= request.time;
     }
 
+    // Validation Blueprint: TeacherUpload
+    function isValidTeacherUpload(data) {
+      return data.authorId is string && data.authorId == request.auth.uid && data.authorId.size() >= 1 && data.authorId.size() <= 128 &&
+             data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 100 &&
+             data.uploadType is string && (data.uploadType == 'VIDEO' || data.uploadType == 'DPP' || data.uploadType == 'MATERIAL') &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
+             data.subject is string && data.subject.size() >= 1 && data.subject.size() <= 50 &&
+             data.chapterTitle is string && data.chapterTitle.size() >= 1 && data.chapterTitle.size() <= 200 &&
+             data.courseId is string && data.courseId.size() >= 1 && data.courseId.size() <= 100 &&
+             data.resourceUrl is string && data.resourceUrl.size() <= 1000 &&
+             data.materialCategory is string && data.materialCategory.size() >= 1 && data.materialCategory.size() <= 100 &&
+             data.description is string && data.description.size() >= 1 && data.description.size() <= 2000 &&
+             data.durationMinutes is int && data.durationMinutes >= 0 && data.durationMinutes <= 600 &&
+             (!('dppPayloadJson' in data) || data.dppPayloadJson == null || (data.dppPayloadJson is string && data.dppPayloadJson.size() <= 50000)) &&
+             data.isPublished is bool &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
     // Collection 1: Student Profiles (/users/{userId})
     match /users/{userId} {
       allow get: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
@@ -143,6 +162,29 @@ service cloud.firestore {
 
         allow delete: if isSignedIn() && isValidId(userId) && isValidId(doubtId) && request.auth.uid == userId && existing().userId == request.auth.uid;
       }
+    }
+
+    // Collection 4: Teacher Uploads (/teacher_uploads/{uploadId})
+    match /teacher_uploads/{uploadId} {
+      allow get: if isSignedIn() && isValidId(uploadId) && (resource == null || existing().isPublished == true || existing().authorId == request.auth.uid);
+      allow list: if isSignedIn() && existing().isPublished == true;
+
+      allow create: if isSignedIn() &&
+                       isValidId(uploadId) &&
+                       incoming().keys().hasAll(['authorId', 'authorName', 'uploadType', 'title', 'subject', 'chapterTitle', 'courseId', 'resourceUrl', 'materialCategory', 'description', 'durationMinutes', 'isPublished', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['authorId', 'authorName', 'uploadType', 'title', 'subject', 'chapterTitle', 'courseId', 'resourceUrl', 'materialCategory', 'description', 'durationMinutes', 'dppPayloadJson', 'isPublished', 'createdAt', 'updatedAt']) &&
+                       isValidTeacherUpload(incoming());
+
+      allow update: if isSignedIn() &&
+                       isValidId(uploadId) &&
+                       existing().authorId == request.auth.uid &&
+                       isValidTeacherUpload(incoming()) &&
+                       incoming().authorId == existing().authorId &&
+                       incoming().uploadType == existing().uploadType &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['authorName', 'title', 'subject', 'chapterTitle', 'courseId', 'resourceUrl', 'materialCategory', 'description', 'durationMinutes', 'dppPayloadJson', 'isPublished', 'updatedAt']);
+
+      allow delete: if isSignedIn() && isValidId(uploadId) && existing().authorId == request.auth.uid;
     }
   }
 }

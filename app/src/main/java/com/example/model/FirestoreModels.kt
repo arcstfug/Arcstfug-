@@ -55,3 +55,24 @@ data class StudentDoubtDoc(
     @ServerTimestamp val createdAt: Timestamp? = null,
     @ServerTimestamp val updatedAt: Timestamp? = null
 )
+
+@IgnoreExtraProperties
+data class TeacherUploadDoc(
+    @DocumentId val id: String = "",
+    val authorId: String = "",
+    val authorName: String = "ARCSTFUG Faculty",
+    val uploadType: String = "VIDEO", // "VIDEO", "DPP", "MATERIAL"
+    val title: String = "",
+    val subject: String = "PHYSICS",
+    val chapterTitle: String = "",
+    val courseId: String = "c_arjuna_jee",
+    val resourceUrl: String = "",
+    val materialCategory: String = "Video Lecture",
+    val description: String = "",
+    val durationMinutes: Long = 45L,
+    val dppPayloadJson: String? = null,
+    val isPublished: Boolean = true,
+    @ServerTimestamp val createdAt: Timestamp? = null,
+    @ServerTimestamp val updatedAt: Timestamp? = null
+)
+

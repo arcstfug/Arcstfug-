@@ -41,6 +41,8 @@ fun HomeScreen(
     onOpenBatch: (String) -> Unit,
     onOpenLecture: (String) -> Unit,
     onStartDpp: (String) -> Unit,
+    studyMaterials: List<StudyMaterial> = emptyList(),
+    onOpenTeacherAdmin: () -> Unit = { onNavigateTab(MainNavTab.TEACHER_ADMIN) },
     modifier: Modifier = Modifier
 ) {
     val uriHandler = LocalUriHandler.current
@@ -207,6 +209,156 @@ fun HomeScreen(
                         testTag = "hub_tests",
                         onClick = { onNavigateTab(MainNavTab.PROFILE) }
                     )
+                }
+
+                // Teacher / Faculty Admin Panel Card (Upload Video, DPP & Study Material)
+                Card(
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = CardDefaults.outlinedCardBorder(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onOpenTeacherAdmin() }
+                        .testTag("open_teacher_admin_home_card")
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                Brush.horizontalGradient(
+                                    listOf(
+                                        IndigoPrimary.copy(alpha = 0.14f),
+                                        AmberStreak.copy(alpha = 0.12f)
+                                    )
+                                )
+                            )
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(IndigoPrimary),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.CloudUpload,
+                                contentDescription = "Teacher Admin Studio",
+                                tint = Color.White,
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Teacher & Faculty Admin Panel",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Upload Video Lectures, Create Chapter DPPs & Share PDF Study Materials",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        Button(
+                            onClick = onOpenTeacherAdmin,
+                            colors = ButtonDefaults.buttonColors(containerColor = IndigoPrimary),
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                            modifier = Modifier.testTag("open_teacher_admin_home_btn")
+                        ) {
+                            Text("Upload", fontSize = 12.sp, color = Color.White)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = Color.White
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Teacher-Uploaded Study Materials (if any custom materials were uploaded)
+        val customMaterials = studyMaterials.filter { it.isTeacherUpload }
+        if (customMaterials.isNotEmpty()) {
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "Newly Uploaded Faculty Study Materials (${customMaterials.size})",
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    customMaterials.forEach { mat ->
+                        Card(
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            border = CardDefaults.outlinedCardBorder(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    if (mat.resourceUrl.startsWith("http")) {
+                                        uriHandler.openUri(mat.resourceUrl)
+                                    }
+                                }
+                                .testTag("home_teacher_material_${mat.id}")
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(EmeraldSuccess.copy(alpha = 0.15f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.PictureAsPdf,
+                                        contentDescription = null,
+                                        tint = EmeraldSuccess,
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = mat.title,
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = "${mat.category} • ${mat.subject.displayName} (${mat.chapterTitle}) • By ${mat.authorName}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Text(
+                                        text = mat.description,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 2
+                                    )
+                                }
+                                if (mat.resourceUrl.startsWith("http")) {
+                                    Icon(
+                                        imageVector = Icons.Filled.OpenInNew,
+                                        contentDescription = "Open Material",
+                                        tint = IndigoPrimary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

@@ -23,6 +23,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
+import org.json.JSONArray
 import org.json.JSONObject
 
 private const val TAG = "EduViewModel"
@@ -41,6 +42,7 @@ object AppRoutes {
     const val ROUTE_PRACTICE = "practice"
     const val ROUTE_PROFILE = "profile"
     const val ROUTE_BATCHES = "batches"
+    const val ROUTE_TEACHER_ADMIN = "teacher_admin"
 }
 
 enum class MainNavTab(
@@ -52,7 +54,8 @@ enum class MainNavTab(
     LECTURES(AppRoutes.ROUTE_LECTURES, "Lectures", true),
     PRACTICE(AppRoutes.ROUTE_PRACTICE, "Practice", true),
     PROFILE(AppRoutes.ROUTE_PROFILE, "Profile", true),
-    BATCHES(AppRoutes.ROUTE_BATCHES, "Batches", false);
+    BATCHES(AppRoutes.ROUTE_BATCHES, "Batches", false),
+    TEACHER_ADMIN(AppRoutes.ROUTE_TEACHER_ADMIN, "Teacher Admin", false);
 
     companion object {
         val bottomBarTabs = listOf(HOME, LECTURES, PRACTICE, PROFILE)
@@ -117,6 +120,8 @@ class EduViewModel(
     val userProfile = repository.userProfile
     val mockTests = repository.mockTests
     val doubts = repository.doubts
+    val studyMaterials = repository.studyMaterials
+    val teacherUploads = repository.teacherUploads
 
     // AI Feature States
     private val _doubtAiState = MutableStateFlow<AiUiState>(AiUiState.Idle)
@@ -146,6 +151,9 @@ class EduViewModel(
 
     private val _activeDppResultId = MutableStateFlow<String?>(null)
     val activeDppResultId = _activeDppResultId.asStateFlow()
+
+    private val _isTeacherAdminOpen = MutableStateFlow(false)
+    val isTeacherAdminOpen = _isTeacherAdminOpen.asStateFlow()
 
     // Filters & Search
     private val _searchQuery = MutableStateFlow("")
@@ -259,6 +267,19 @@ class EduViewModel(
                         repository.applyCloudDoubts(cloudDoubts)
                     }
             }
+            viewModelScope.launch {
+                cloud.observePublishedTeacherUploads()
+                    .catch { error ->
+                        val firestoreError = generateSequence(error) { it.cause }
+                            .filterIsInstance<FirebaseFirestoreException>()
+                            .firstOrNull()
+                        if (firestoreError == null && error is CancellationException) throw error
+                        Log.e(TAG, "Teacher uploads sync stream error", firestoreError ?: error)
+                    }
+                    .collect { uploads ->
+                        repository.applyCloudTeacherUploads(uploads)
+                    }
+            }
         }
     }
 
@@ -295,7 +316,16 @@ class EduViewModel(
         _activeLectureId.value = null
         _activeDppSolvingId.value = null
         _activeDppResultId.value = null
+        _isTeacherAdminOpen.value = (tab == MainNavTab.TEACHER_ADMIN)
         stopVideoPlayback()
+    }
+
+    fun openTeacherAdmin() {
+        _isTeacherAdminOpen.value = true
+    }
+
+    fun closeTeacherAdmin() {
+        _isTeacherAdminOpen.value = false
     }
 
     fun openBatch(batchId: String) {
@@ -856,6 +886,263 @@ class EduViewModel(
         repository.toggleLectureBookmark(lectureId)
         syncProfileToCloud()
         showSnackbar("Bookmark updated!")
+    }
+
+    // =========================================================================
+    // TEACHER / FACULTY ADMIN STUDIO (UPLOAD VIDEO, DPP, & STUDY MATERIAL)
+    // =========================================================================
+
+    fun uploadTeacherVideo(
+        title: String,
+        subject: SubjectType,
+        chapterTitle: String,
+        courseId: String,
+        instructorName: String,
+        durationMinutes: Int,
+        videoUrl: String,
+        notesSummaryText: String
+    ) {
+        val cleanTitle = title.trim().ifEmpty { "Lec: ${chapterTitle.ifBlank { subject.displayName }}" }
+        val cleanChapter = chapterTitle.trim().ifEmpty { "${subject.displayName} Faculty Lectures" }
+        val cleanInstructor = instructorName.trim().ifEmpty { userProfile.value.name.ifBlank { "ARCSTFUG Faculty" } }
+        val safeDuration = durationMinutes.coerceIn(5, 360)
+        val uploadId = "up_vid_${System.currentTimeMillis()}"
+        val notesLines = notesSummaryText.lines().map { it.trim() }.filter { it.isNotEmpty() }
+            .ifEmpty { listOf("Uploaded by $cleanInstructor for $cleanChapter.") }
+
+        val newLecture = Lecture(
+            id = uploadId,
+            courseId = courseId.ifBlank { "c_arjuna_jee" },
+            subject = subject,
+            chapterId = "ch_teacher_${cleanChapter.hashCode()}",
+            chapterTitle = cleanChapter,
+            title = cleanTitle,
+            lectureNumber = repository.getAllLectures().size + 1,
+            instructor = cleanInstructor,
+            durationMinutes = safeDuration,
+            notesSummary = notesLines,
+            timestamps = listOf(
+                LectureTimestamp(0, "00:00", "Introduction & Core Theory"),
+                LectureTimestamp(300, "05:00", "Key Derivations & Formula Breakdown"),
+                LectureTimestamp(900, "15:00", "Solved JEE / NEET Illustrations")
+            ),
+            videoUrl = videoUrl.trim().takeIf { it.isNotEmpty() }
+        )
+
+        repository.addCustomLecture(newLecture)
+        repository.upsertTeacherUploadItem(
+            TeacherUploadItem(
+                id = uploadId,
+                authorId = currentUserId ?: "local_teacher",
+                authorName = cleanInstructor,
+                uploadType = "VIDEO",
+                title = cleanTitle,
+                subject = subject,
+                chapterTitle = cleanChapter,
+                courseId = courseId.ifBlank { "c_arjuna_jee" },
+                resourceUrl = videoUrl.trim(),
+                materialCategory = "Video Lecture",
+                description = notesLines.joinToString("\n"),
+                durationMinutes = safeDuration
+            )
+        )
+
+        val cloud = cloudRepository
+        if (cloud != null && !currentUserId.isNullOrBlank()) {
+            viewModelScope.launch {
+                cloud.saveTeacherUpload(
+                    uploadId = uploadId,
+                    authorName = cleanInstructor,
+                    uploadType = "VIDEO",
+                    title = cleanTitle,
+                    subject = subject.name,
+                    chapterTitle = cleanChapter,
+                    courseId = courseId.ifBlank { "c_arjuna_jee" },
+                    resourceUrl = videoUrl.trim(),
+                    materialCategory = "Video Lecture",
+                    description = notesLines.joinToString("\n"),
+                    durationMinutes = safeDuration,
+                    isPublished = true
+                )
+            }
+        }
+        showSnackbar("🎬 Video Lecture '$cleanTitle' uploaded & published!")
+    }
+
+    fun uploadTeacherDpp(
+        title: String,
+        subject: SubjectType,
+        chapterTitle: String,
+        courseId: String,
+        timeLimitMinutes: Int,
+        sourceBookTag: String,
+        questions: List<Question>
+    ) {
+        if (questions.isEmpty()) {
+            showSnackbar("⚠️ Add at least 1 question before publishing the DPP.")
+            return
+        }
+        val cleanTitle = title.trim().ifEmpty { "DPP: $chapterTitle" }
+        val cleanChapter = chapterTitle.trim().ifEmpty { "${subject.displayName} Practice" }
+        val cleanSource = sourceBookTag.trim().ifEmpty { "Faculty Custom DPP" }
+        val safeTime = timeLimitMinutes.coerceIn(5, 180)
+        val uploadId = "up_dpp_${System.currentTimeMillis()}"
+        val authorName = currentUserDisplayName?.takeIf { it.isNotBlank() }
+            ?: userProfile.value.name.ifBlank { "ARCSTFUG Faculty" }
+
+        val newDpp = Dpp(
+            id = uploadId,
+            number = repository.getAllDpps().size + 1,
+            title = cleanTitle,
+            subject = subject,
+            chapterTitle = cleanChapter,
+            courseId = courseId.ifBlank { "c_arjuna_jee" },
+            questions = questions,
+            timeLimitMinutes = safeTime,
+            status = DppStatus.PENDING,
+            sourceBook = cleanSource
+        )
+
+        repository.addCustomDpp(newDpp)
+        repository.upsertTeacherUploadItem(
+            TeacherUploadItem(
+                id = uploadId,
+                authorId = currentUserId ?: "local_teacher",
+                authorName = authorName,
+                uploadType = "DPP",
+                title = cleanTitle,
+                subject = subject,
+                chapterTitle = cleanChapter,
+                courseId = courseId.ifBlank { "c_arjuna_jee" },
+                resourceUrl = "",
+                materialCategory = cleanSource,
+                description = "${questions.size} Questions • $safeTime mins • $cleanChapter",
+                durationMinutes = safeTime
+            )
+        )
+
+        val jsonArray = JSONArray()
+        questions.forEach { q ->
+            val obj = JSONObject()
+            obj.put("id", q.id)
+            obj.put("questionText", q.questionText)
+            val optsArr = JSONArray()
+            q.options.forEach { optsArr.put(it) }
+            obj.put("options", optsArr)
+            obj.put("correctOptionIndex", q.correctOptionIndex)
+            val indicesArr = JSONArray()
+            q.correctOptionIndices.forEach { indicesArr.put(it) }
+            obj.put("correctOptionIndices", indicesArr)
+            obj.put("isMultiSelect", q.isMultiSelect)
+            obj.put("explanation", q.explanation)
+            obj.put("hint", q.hint)
+            obj.put("topic", q.topic)
+            jsonArray.put(obj)
+        }
+
+        val cloud = cloudRepository
+        if (cloud != null && !currentUserId.isNullOrBlank()) {
+            viewModelScope.launch {
+                cloud.saveTeacherUpload(
+                    uploadId = uploadId,
+                    authorName = authorName,
+                    uploadType = "DPP",
+                    title = cleanTitle,
+                    subject = subject.name,
+                    chapterTitle = cleanChapter,
+                    courseId = courseId.ifBlank { "c_arjuna_jee" },
+                    resourceUrl = "",
+                    materialCategory = cleanSource,
+                    description = "${questions.size} Questions • $safeTime mins • $cleanChapter",
+                    durationMinutes = safeTime,
+                    dppPayloadJson = jsonArray.toString(),
+                    isPublished = true
+                )
+            }
+        }
+        showSnackbar("📝 DPP '$cleanTitle' (${questions.size} Qs) uploaded & published!")
+    }
+
+    fun uploadTeacherMaterial(
+        title: String,
+        subject: SubjectType,
+        chapterTitle: String,
+        courseId: String,
+        category: String,
+        resourceUrl: String,
+        description: String,
+        authorName: String
+    ) {
+        val cleanTitle = title.trim().ifEmpty { "$category: $chapterTitle" }
+        val cleanChapter = chapterTitle.trim().ifEmpty { "${subject.displayName} Study Notes" }
+        val cleanCategory = category.trim().ifEmpty { "PDF Class Notes" }
+        val cleanAuthor = authorName.trim().ifEmpty { userProfile.value.name.ifBlank { "ARCSTFUG Faculty" } }
+        val cleanDesc = description.trim().ifEmpty { "$cleanCategory for $cleanChapter uploaded by $cleanAuthor." }
+        val uploadId = "up_mat_${System.currentTimeMillis()}"
+
+        val newMaterial = StudyMaterial(
+            id = uploadId,
+            title = cleanTitle,
+            subject = subject,
+            chapterTitle = cleanChapter,
+            courseId = courseId.ifBlank { "c_arjuna_jee" },
+            category = cleanCategory,
+            description = cleanDesc,
+            resourceUrl = resourceUrl.trim().ifEmpty { ExternalStudyLinks.PHYSICS_DRIVE_URL },
+            authorName = cleanAuthor,
+            uploadedAtLabel = "Just uploaded",
+            isTeacherUpload = true
+        )
+
+        repository.addStudyMaterial(newMaterial)
+        repository.upsertTeacherUploadItem(
+            TeacherUploadItem(
+                id = uploadId,
+                authorId = currentUserId ?: "local_teacher",
+                authorName = cleanAuthor,
+                uploadType = "MATERIAL",
+                title = cleanTitle,
+                subject = subject,
+                chapterTitle = cleanChapter,
+                courseId = courseId.ifBlank { "c_arjuna_jee" },
+                resourceUrl = newMaterial.resourceUrl,
+                materialCategory = cleanCategory,
+                description = cleanDesc,
+                durationMinutes = 0
+            )
+        )
+
+        val cloud = cloudRepository
+        if (cloud != null && !currentUserId.isNullOrBlank()) {
+            viewModelScope.launch {
+                cloud.saveTeacherUpload(
+                    uploadId = uploadId,
+                    authorName = cleanAuthor,
+                    uploadType = "MATERIAL",
+                    title = cleanTitle,
+                    subject = subject.name,
+                    chapterTitle = cleanChapter,
+                    courseId = courseId.ifBlank { "c_arjuna_jee" },
+                    resourceUrl = newMaterial.resourceUrl,
+                    materialCategory = cleanCategory,
+                    description = cleanDesc,
+                    durationMinutes = 0,
+                    isPublished = true
+                )
+            }
+        }
+        showSnackbar("📚 Study Material '$cleanTitle' uploaded & published!")
+    }
+
+    fun deleteTeacherUpload(uploadId: String) {
+        repository.removeTeacherUploadById(uploadId)
+        val cloud = cloudRepository
+        if (cloud != null && !currentUserId.isNullOrBlank()) {
+            viewModelScope.launch {
+                cloud.deleteTeacherUpload(uploadId)
+            }
+        }
+        showSnackbar("🗑️ Uploaded item removed.")
     }
 
     fun setSearchQuery(query: String) {
