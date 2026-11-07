@@ -9,7 +9,7 @@ import com.google.firebase.firestore.ServerTimestamp
 data class StudentProfileDoc(
     @DocumentId val id: String = "",
     val userId: String = "",
-    val name: String = "Arun Sharma",
+    val name: String = "Student Name",
     val email: String? = null,
     val targetExam: String = "JEE Main & Advanced 2026",
     val classLevel: String = "Class 12th",

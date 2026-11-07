@@ -1,6 +1,8 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,7 +18,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -33,17 +37,19 @@ fun CoursesScreen(
     var selectedCategory by remember { mutableStateOf("All") }
     var searchQuery by remember { mutableStateOf("") }
 
-    val categories = listOf("All", "Enrolled", "JEE Main & Adv", "NEET-UG", "Class 10 Board")
+    val categories = listOf("All", "Enrolled", "HACKER", "JEE Main & Adv", "NEET-UG", "Class 10 Board")
 
     val filteredCourses = courses.filter { course ->
         val matchesCategory = when (selectedCategory) {
             "All" -> true
             "Enrolled" -> course.isEnrolled
-            else -> course.category.equals(selectedCategory, ignoreCase = true)
+            else -> course.category.equals(selectedCategory, ignoreCase = true) ||
+                    course.tag.equals(selectedCategory, ignoreCase = true)
         }
         val matchesSearch = course.title.contains(searchQuery, ignoreCase = true) ||
                 course.description.contains(searchQuery, ignoreCase = true) ||
-                course.instructorTeam.contains(searchQuery, ignoreCase = true)
+                course.instructorTeam.contains(searchQuery, ignoreCase = true) ||
+                course.availablePlans.any { it.contains(searchQuery, ignoreCase = true) }
         matchesCategory && matchesSearch
     }
 
@@ -147,51 +153,82 @@ fun CourseCardItem(
     ) {
         Column {
             // Header Banner
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(130.dp)
-                    .background(
-                        Brush.linearGradient(
-                            listOf(Color(course.bannerColorHex), Color(0xFF1E1B4B))
-                        )
+            if (course.bannerDrawableRes != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(190.dp)
+                ) {
+                    Image(
+                        painter = painterResource(id = course.bannerDrawableRes),
+                        contentDescription = course.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
                     )
-                    .padding(16.dp)
-            ) {
-                Column(modifier = Modifier.align(Alignment.BottomStart)) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (course.isEnrolled) {
                         Surface(
                             shape = RoundedCornerShape(6.dp),
-                            color = Color(0x35FFFFFF)
+                            color = EmeraldSuccess,
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(12.dp)
                         ) {
                             Text(
-                                text = course.tag,
+                                text = "ENROLLED",
                                 color = Color.White,
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                             )
                         }
-                        if (course.isEnrolled) {
+                    }
+                }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(130.dp)
+                        .background(
+                            Brush.linearGradient(
+                                listOf(Color(course.bannerColorHex), Color(0xFF1E1B4B))
+                            )
+                        )
+                        .padding(16.dp)
+                ) {
+                    Column(modifier = Modifier.align(Alignment.BottomStart)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Surface(
                                 shape = RoundedCornerShape(6.dp),
-                                color = EmeraldSuccess
+                                color = Color(0x35FFFFFF)
                             ) {
                                 Text(
-                                    text = "ENROLLED",
+                                    text = course.tag,
                                     color = Color.White,
                                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                                 )
                             }
+                            if (course.isEnrolled) {
+                                Surface(
+                                    shape = RoundedCornerShape(6.dp),
+                                    color = EmeraldSuccess
+                                ) {
+                                    Text(
+                                        text = "ENROLLED",
+                                        color = Color.White,
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                    )
+                                }
+                            }
                         }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = course.title,
+                            color = Color.White,
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            maxLines = 2
+                        )
                     }
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = course.title,
-                        color = Color.White,
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        maxLines = 2
-                    )
                 }
             }
 
@@ -200,6 +237,47 @@ fun CourseCardItem(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+                if (course.availablePlans.isNotEmpty() || !course.featureBadge.isNullOrBlank()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (course.availablePlans.isNotEmpty()) {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = AmberContainer
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text("👑", fontSize = 13.sp)
+                                    Text(
+                                        text = "Multiple plans inside: ${course.availablePlans.joinToString(", ")}",
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
+                                        color = Color(0xFF78350F)
+                                    )
+                                }
+                            }
+                        }
+                        if (!course.featureBadge.isNullOrBlank()) {
+                            Surface(
+                                shape = RoundedCornerShape(20.dp),
+                                color = Color(0xFFFDE68A),
+                                modifier = Modifier.border(1.5.dp, Color(0xFF78350F), RoundedCornerShape(20.dp))
+                            ) {
+                                Text(
+                                    text = course.featureBadge,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
+                                    color = Color(0xFF1E1B4B),
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+                    }
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,

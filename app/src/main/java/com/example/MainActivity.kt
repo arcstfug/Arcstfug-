@@ -61,6 +61,8 @@ fun AppRoot() {
         )
     }
     var isOfflineSession by remember { mutableStateOf(false) }
+    var customStudentName by remember { mutableStateOf<String?>(null) }
+    var customStudentEmail by remember { mutableStateOf<String?>(null) }
 
     DisposableEffect(isFirebaseReady) {
         if (isFirebaseReady) {
@@ -88,23 +90,30 @@ fun AppRoot() {
             },
             onContinueOffline = {
                 isOfflineSession = true
+            },
+            onLoginWithStudentProfile = { name, email ->
+                customStudentName = name.takeIf { it.isNotBlank() }
+                customStudentEmail = email.takeIf { it.isNotBlank() }
+                isOfflineSession = true
             }
         )
     } else {
-        val sessionKey = activeUser?.uid ?: "offline_student"
+        val effectiveName = activeUser?.displayName ?: customStudentName
+        val effectiveEmail = activeUser?.email ?: customStudentEmail
+        val sessionKey = activeUser?.uid ?: "student_${effectiveName ?: "default"}"
         val eduViewModel: EduViewModel = viewModel(
             key = "edu_vm_$sessionKey",
             factory = EduViewModel.provideFactory(
                 context = context,
                 userId = activeUser?.uid,
-                displayName = activeUser?.displayName,
-                email = activeUser?.email
+                displayName = effectiveName,
+                email = effectiveEmail
             )
         )
         MainAppContent(
             viewModel = eduViewModel,
             userUid = activeUser?.uid,
-            userEmail = activeUser?.email,
+            userEmail = effectiveEmail,
             onSignOut = {
                 signOut(
                     context = context,
@@ -112,6 +121,8 @@ fun AppRoot() {
                     onSignOutComplete = {
                         currentUser = null
                         isOfflineSession = false
+                        customStudentName = null
+                        customStudentEmail = null
                     },
                     scope = coroutineScope
                 )
@@ -298,6 +309,9 @@ fun MainAppContent(
                         viewModel.startDpp(it)
                     },
                     onBack = { viewModel.closeTeacherAdmin() },
+                    onUploadCourse = { title, tag, plans, instr, price, storageUrl, desc ->
+                        viewModel.uploadTeacherCourse(title, tag, plans, instr, price, storageUrl, desc)
+                    },
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(adminPadding)
@@ -427,6 +441,9 @@ fun MainAppContent(
                                 viewModel.startDpp(it)
                             },
                             onBack = { navigateToTab(MainNavTab.HOME) },
+                            onUploadCourse = { title, tag, plans, instr, price, storageUrl, desc ->
+                                viewModel.uploadTeacherCourse(title, tag, plans, instr, price, storageUrl, desc)
+                            },
                             modifier = Modifier.fillMaxSize()
                         )
                     }

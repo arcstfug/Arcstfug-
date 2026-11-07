@@ -1,5 +1,6 @@
 package com.example.data
 
+import com.example.R
 import com.example.model.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,7 +16,7 @@ class EduRepository {
 
     private val _userProfile = MutableStateFlow(
         UserProfile(
-            name = "Arun Sharma",
+            name = "Student Name",
             targetExam = "JEE Main & Advanced 2026",
             currentStreakDays = 14,
             totalDppsSolved = 28,
@@ -368,20 +369,28 @@ class EduRepository {
         _teacherUploads.update { current -> current.filterNot { it.id == uploadId } }
         _studyMaterials.update { current -> current.filterNot { it.id == uploadId } }
         _courses.update { courseList ->
-            courseList.map { course ->
-                course.copy(
-                    subjects = course.subjects.map { subj ->
-                        subj.copy(
-                            chapters = subj.chapters.map { chap ->
-                                chap.copy(
-                                    lectures = chap.lectures.filterNot { it.id == uploadId },
-                                    dpps = chap.dpps.filterNot { it.id == uploadId }
-                                )
-                            }
-                        )
-                    }
-                )
-            }
+            courseList
+                .filterNot { it.id == uploadId }
+                .map { course ->
+                    course.copy(
+                        subjects = course.subjects.map { subj ->
+                            subj.copy(
+                                chapters = subj.chapters.map { chap ->
+                                    chap.copy(
+                                        lectures = chap.lectures.filterNot { it.id == uploadId },
+                                        dpps = chap.dpps.filterNot { it.id == uploadId }
+                                    )
+                                }
+                            )
+                        }
+                    )
+                }
+        }
+    }
+
+    fun addCourseBatch(course: CourseBatch) {
+        _courses.update { existing ->
+            listOf(course) + existing.filterNot { it.id == course.id }
         }
     }
 
@@ -447,6 +456,40 @@ class EduRepository {
                         sourceBook = doc.materialCategory.ifBlank { "Teacher DPP (${doc.authorName})" }
                     )
                     addCustomDpp(dpp)
+                }
+                "COURSE" -> {
+                    val plans = doc.chapterTitle.split(",")
+                        .map { it.trim() }
+                        .filter { it.isNotEmpty() }
+                        .ifEmpty { listOf("Infinity", "Pro") }
+                    val customCourse = CourseBatch(
+                        id = doc.courseId.ifBlank { doc.id },
+                        title = doc.title,
+                        category = doc.materialCategory.ifBlank { "HACKER" },
+                        tag = doc.materialCategory.ifBlank { "HACKER" },
+                        rating = 5.0f,
+                        enrolledCount = "Live Batch",
+                        price = if (doc.durationMinutes > 0) "₹${doc.durationMinutes}" else "₹2,999",
+                        originalPrice = "₹9,999",
+                        instructorTeam = doc.authorName.ifBlank { "ARCSTFUG Lead Instructor" },
+                        description = doc.description,
+                        syllabusCoveragePercent = 100,
+                        isEnrolled = true,
+                        bannerColorHex = 0xFF78350F,
+                        subjects = listOf(
+                            SubjectDetail(
+                                type = subjectEnum,
+                                chapters = emptyList()
+                            )
+                        ),
+                        bannerDrawableRes = if (doc.title.contains("HACKING", ignoreCase = true)) {
+                            R.drawable.hacking_course_2027_banner
+                        } else null,
+                        availablePlans = plans,
+                        featureBadge = doc.materialCategory.ifBlank { "HACKER" },
+                        storageBucketUrl = doc.resourceUrl.ifBlank { ExternalStudyLinks.FIREBASE_STORAGE_BUCKET }
+                    )
+                    addCourseBatch(customCourse)
                 }
                 else -> {
                     val mat = StudyMaterial(
@@ -587,7 +630,7 @@ class EduRepository {
     fun applyCloudProfile(doc: StudentProfileDoc) {
         _userProfile.update { current ->
             current.copy(
-                name = doc.name.ifBlank { current.name },
+                name = doc.name.takeIf { it.isNotBlank() && it != "Arun Sharma" } ?: current.name,
                 targetExam = doc.targetExam.ifBlank { current.targetExam },
                 classLevel = doc.classLevel.ifBlank { current.classLevel },
                 studentGoal = doc.studentGoal.ifBlank { current.studentGoal },
@@ -685,6 +728,112 @@ class EduRepository {
 
     private fun createInitialCourses(): List<CourseBatch> {
         return listOf(
+            CourseBatch(
+                id = "c_hacking_2027",
+                title = "HACKING COURSE 2027",
+                category = "HACKER",
+                tag = "HACKER",
+                rating = 5.0f,
+                enrolledCount = "Multiple plans: Infinity, Pro",
+                price = "₹2,499",
+                originalPrice = "₹8,999",
+                instructorTeam = "Lead Hacker Mentor (Sunglasses & Blue-Green Emblem Faculty)",
+                description = "Multiple plans inside: Infinity, Pro 👑 • Official HACKING COURSE 2027 with designated HACKER badge, hands-on Cyber Defense, Ethical Hacking labs, Network Security, Linux Mastery & Firebase Cloud Storage resources.",
+                syllabusCoveragePercent = 100,
+                isEnrolled = true,
+                bannerColorHex = 0xFF78350F,
+                bannerDrawableRes = R.drawable.hacking_course_2027_banner,
+                availablePlans = listOf("Infinity", "Pro"),
+                featureBadge = "HACKER",
+                storageBucketUrl = "${ExternalStudyLinks.FIREBASE_STORAGE_BUCKET}/courses/hacking_course_2027",
+                subjects = listOf(
+                    SubjectDetail(
+                        type = SubjectType.PHYSICS,
+                        chapters = listOf(
+                            Chapter(
+                                id = "hack_ch1",
+                                subject = SubjectType.PHYSICS,
+                                title = "Module 01: Ethical Hacking & Network Defense",
+                                order = 1,
+                                lectures = listOf(
+                                    Lecture(
+                                        id = "lec_hack_2027_1",
+                                        courseId = "c_hacking_2027",
+                                        subject = SubjectType.PHYSICS,
+                                        chapterId = "hack_ch1",
+                                        chapterTitle = "Module 01: Ethical Hacking & Network Defense",
+                                        title = "Lec 01: HACKING COURSE 2027 Orientation (Infinity & Pro Plans)",
+                                        lectureNumber = 1,
+                                        instructor = "Lead Hacker Mentor",
+                                        durationMinutes = 60,
+                                        progressSec = 0,
+                                        isCompleted = false,
+                                        isBookmarked = true,
+                                        notesSummary = listOf(
+                                            "Course Roadmap for HACKING COURSE 2027 — Infinity & Pro Crown Plans.",
+                                            "OSI & TCP/IP 5-Layer Network Architecture, Packet Inspection & Firewall Rules.",
+                                            "Setting up isolated Linux Virtual Labs & Cryptography Fundamentals (SHA-256, AES, RSA).",
+                                            "Zero-Trust Security Architecture & Firebase Cloud Storage Access Control."
+                                        ),
+                                        timestamps = listOf(
+                                            LectureTimestamp(0, "00:00", "Welcome to HACKING COURSE 2027 (Infinity & Pro)"),
+                                            LectureTimestamp(720, "12:00", "Network Protocols, Ports & Defense Architecture"),
+                                            LectureTimestamp(1800, "30:00", "Linux Terminal Commands & Security Auditing"),
+                                            LectureTimestamp(2700, "45:00", "Hands-On Lab Setup & Cloud Storage Resources")
+                                        ),
+                                        dppId = "dpp_hack_2027_1"
+                                    )
+                                ),
+                                dpps = listOf(
+                                    Dpp(
+                                        id = "dpp_hack_2027_1",
+                                        number = 1,
+                                        title = "DPP 01: Network Security, Cryptography & Linux Fundamentals",
+                                        subject = SubjectType.PHYSICS,
+                                        chapterTitle = "Module 01: Ethical Hacking & Network Defense",
+                                        courseId = "c_hacking_2027",
+                                        timeLimitMinutes = 15,
+                                        status = DppStatus.PENDING,
+                                        sourceBook = "HACKING COURSE 2027 (Infinity & Pro Lab Sheet)",
+                                        questions = listOf(
+                                            Question(
+                                                id = "q_hack_1",
+                                                questionText = "Which layer of the OSI model is primarily responsible for end-to-end encryption, TLS/SSL session formatting, and data representation?",
+                                                options = listOf(
+                                                    "(a) Network Layer (Layer 3)",
+                                                    "(b) Transport Layer (Layer 4)",
+                                                    "(c) Presentation Layer (Layer 6)",
+                                                    "(d) Data Link Layer (Layer 2)"
+                                                ),
+                                                correctOptionIndex = 2,
+                                                explanation = "The Presentation Layer (Layer 6) handles data translation, character encoding, compression, and encryption/decryption before passing data to the Application Layer.",
+                                                hint = "Think of the layer right below the Application Layer (Layer 7).",
+                                                topic = "OSI Security Architecture"
+                                            ),
+                                            Question(
+                                                id = "q_hack_2",
+                                                questionText = "Choose the correct statements regarding Asymmetric (Public-Key) Cryptography (Objective II - Multiple Correct):",
+                                                options = listOf(
+                                                    "(a) It uses a mathematically linked pair of Public and Private keys.",
+                                                    "(b) The Private key must never be shared over an untrusted channel.",
+                                                    "(c) RSA and Elliptic Curve Cryptography (ECC) are asymmetric algorithms.",
+                                                    "(d) Both encryption and decryption always use the exact same secret key."
+                                                ),
+                                                correctOptionIndex = 0,
+                                                correctOptionIndices = setOf(0, 1, 2),
+                                                isMultiSelect = true,
+                                                explanation = "Statements (a), (b), and (c) are true. Asymmetric cryptography uses a public key and a private key (e.g., RSA, ECC). Statement (d) describes symmetric cryptography (like AES).",
+                                                hint = "Asymmetric means two distinct keys are involved.",
+                                                topic = "Cryptography"
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            ),
             CourseBatch(
                 id = "c_arjuna_jee",
                 title = "Arjuna JEE Main & Advanced 2026",

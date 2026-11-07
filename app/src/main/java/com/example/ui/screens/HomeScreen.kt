@@ -734,46 +734,57 @@ fun HomeScreen(
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                             border = CardDefaults.outlinedCardBorder(),
                             modifier = Modifier
-                                .width(280.dp)
+                                .width(295.dp)
                                 .clickable { onOpenBatch(course.id) }
                                 .testTag("home_course_card_${course.id}")
                         ) {
                             Column {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(110.dp)
-                                        .background(
-                                            Brush.linearGradient(
-                                                listOf(
-                                                    Color(course.bannerColorHex),
-                                                    IndigoDark
+                                if (course.bannerDrawableRes != null) {
+                                    Image(
+                                        painter = painterResource(id = course.bannerDrawableRes),
+                                        contentDescription = course.title,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(145.dp)
+                                    )
+                                } else {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(110.dp)
+                                            .background(
+                                                Brush.linearGradient(
+                                                    listOf(
+                                                        Color(course.bannerColorHex),
+                                                        IndigoDark
+                                                    )
                                                 )
                                             )
-                                        )
-                                        .padding(14.dp)
-                                ) {
-                                    Column(
-                                        modifier = Modifier.align(Alignment.BottomStart)
+                                            .padding(14.dp)
                                     ) {
-                                        Surface(
-                                            shape = RoundedCornerShape(4.dp),
-                                            color = Color(0x30FFFFFF)
+                                        Column(
+                                            modifier = Modifier.align(Alignment.BottomStart)
                                         ) {
+                                            Surface(
+                                                shape = RoundedCornerShape(4.dp),
+                                                color = Color(0x30FFFFFF)
+                                            ) {
+                                                Text(
+                                                    text = course.category,
+                                                    color = Color.White,
+                                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                )
+                                            }
+                                            Spacer(modifier = Modifier.height(4.dp))
                                             Text(
-                                                text = course.category,
+                                                text = course.title,
                                                 color = Color.White,
-                                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                                maxLines = 1
                                             )
                                         }
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(
-                                            text = course.title,
-                                            color = Color.White,
-                                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                            maxLines = 1
-                                        )
                                     }
                                 }
 
@@ -781,6 +792,43 @@ fun HomeScreen(
                                     modifier = Modifier.padding(14.dp),
                                     verticalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
+                                    if (course.availablePlans.isNotEmpty() || !course.featureBadge.isNullOrBlank()) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            if (course.availablePlans.isNotEmpty()) {
+                                                Text(
+                                                    text = "👑 Plans: ${course.availablePlans.joinToString(", ")}",
+                                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
+                                                    color = Color(0xFF78350F)
+                                                )
+                                            }
+                                            if (!course.featureBadge.isNullOrBlank()) {
+                                                Surface(
+                                                    shape = RoundedCornerShape(12.dp),
+                                                    color = Color(0xFFFDE68A),
+                                                    modifier = Modifier.border(1.dp, Color(0xFF78350F), RoundedCornerShape(12.dp))
+                                                ) {
+                                                    Text(
+                                                        text = course.featureBadge,
+                                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
+                                                        color = Color(0xFF1E1B4B),
+                                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Text(
+                                        text = course.title,
+                                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        maxLines = 1
+                                    )
+
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.SpaceBetween

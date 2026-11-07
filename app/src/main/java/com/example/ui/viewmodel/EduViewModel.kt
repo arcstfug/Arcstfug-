@@ -203,19 +203,19 @@ class EduViewModel(
     val snackbarMessage = _snackbarMessage.asStateFlow()
 
     init {
+        val defaultName = currentUserDisplayName?.takeIf { it.isNotBlank() } ?: repository.userProfile.value.name
+        if (!currentUserDisplayName.isNullOrBlank()) {
+            repository.updateUserProfile(
+                name = defaultName,
+                targetExam = repository.userProfile.value.targetExam,
+                classLevel = repository.userProfile.value.classLevel,
+                studentGoal = repository.userProfile.value.studentGoal,
+                bio = repository.userProfile.value.bio
+            )
+        }
         val cloud = cloudRepository
         val uid = currentUserId
         if (cloud != null && !uid.isNullOrBlank()) {
-            val defaultName = currentUserDisplayName?.takeIf { it.isNotBlank() } ?: repository.userProfile.value.name
-            if (!currentUserDisplayName.isNullOrBlank()) {
-                repository.updateUserProfile(
-                    name = defaultName,
-                    targetExam = repository.userProfile.value.targetExam,
-                    classLevel = repository.userProfile.value.classLevel,
-                    studentGoal = repository.userProfile.value.studentGoal,
-                    bio = repository.userProfile.value.bio
-                )
-            }
             viewModelScope.launch {
                 cloud.createInitialProfileIfMissing(
                     name = defaultName,
@@ -1132,6 +1132,100 @@ class EduViewModel(
             }
         }
         showSnackbar("📚 Study Material '$cleanTitle' uploaded & published!")
+    }
+
+    fun uploadTeacherCourse(
+        title: String,
+        categoryTag: String,
+        plansCsv: String,
+        instructorName: String,
+        priceRupees: Int,
+        storageBucketOrBannerUrl: String,
+        description: String
+    ) {
+        val cleanTitle = title.trim().ifEmpty { "HACKING COURSE 2027" }
+        val cleanTag = categoryTag.trim().ifEmpty { "HACKER" }
+        val cleanPlans = plansCsv.split(",")
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .ifEmpty { listOf("Infinity", "Pro") }
+        val cleanInstructor = instructorName.trim().ifEmpty { "Lead Hacker Mentor (Sunglasses & Blue-Green Emblem)" }
+        val safePrice = priceRupees.coerceIn(0, 600)
+        val displayPrice = if (priceRupees > 0) "₹$priceRupees" else "₹2,499"
+        val cleanStorageUrl = storageBucketOrBannerUrl.trim().ifEmpty {
+            "${ExternalStudyLinks.FIREBASE_STORAGE_BUCKET}/courses/${cleanTitle.lowercase().replace(" ", "_")}"
+        }
+        val cleanDesc = description.trim().ifEmpty {
+            "Multiple plans inside: ${cleanPlans.joinToString(", ")} 👑 • Featured $cleanTag Course presented by $cleanInstructor."
+        }
+        val uploadId = "up_course_${System.currentTimeMillis()}"
+
+        val newCourse = CourseBatch(
+            id = uploadId,
+            title = cleanTitle,
+            category = cleanTag,
+            tag = cleanTag,
+            rating = 5.0f,
+            enrolledCount = "Multiple plans: ${cleanPlans.joinToString(", ")}",
+            price = displayPrice,
+            originalPrice = "₹8,999",
+            instructorTeam = cleanInstructor,
+            description = cleanDesc,
+            syllabusCoveragePercent = 100,
+            isEnrolled = true,
+            bannerColorHex = 0xFF78350F,
+            subjects = listOf(
+                SubjectDetail(
+                    type = SubjectType.PHYSICS,
+                    chapters = emptyList()
+                )
+            ),
+            bannerDrawableRes = if (cleanTitle.contains("HACKING", ignoreCase = true)) {
+                R.drawable.hacking_course_2027_banner
+            } else null,
+            availablePlans = cleanPlans,
+            featureBadge = cleanTag,
+            storageBucketUrl = cleanStorageUrl
+        )
+
+        repository.addCourseBatch(newCourse)
+        repository.upsertTeacherUploadItem(
+            TeacherUploadItem(
+                id = uploadId,
+                authorId = currentUserId ?: "local_teacher",
+                authorName = cleanInstructor,
+                uploadType = "COURSE",
+                title = cleanTitle,
+                subject = SubjectType.PHYSICS,
+                chapterTitle = cleanPlans.joinToString(", "),
+                courseId = uploadId,
+                resourceUrl = cleanStorageUrl,
+                materialCategory = cleanTag,
+                description = cleanDesc,
+                durationMinutes = safePrice
+            )
+        )
+
+        val cloud = cloudRepository
+        if (cloud != null && !currentUserId.isNullOrBlank()) {
+            viewModelScope.launch {
+                cloud.saveTeacherUpload(
+                    uploadId = uploadId,
+                    authorName = cleanInstructor,
+                    uploadType = "COURSE",
+                    title = cleanTitle,
+                    subject = SubjectType.PHYSICS.name,
+                    chapterTitle = cleanPlans.joinToString(", "),
+                    courseId = uploadId,
+                    resourceUrl = cleanStorageUrl,
+                    materialCategory = cleanTag,
+                    description = cleanDesc,
+                    durationMinutes = safePrice,
+                    isPublished = true
+                )
+            }
+        }
+        showSnackbar("👑 Course '$cleanTitle' (${cleanPlans.joinToString(", ")}) synced with Firebase Storage & Firestore!")
     }
 
     fun deleteTeacherUpload(uploadId: String) {

@@ -8,7 +8,9 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -25,15 +27,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.R
 import com.example.model.*
 import com.example.ui.theme.*
 
@@ -79,6 +84,15 @@ fun TeacherAdminScreen(
     onOpenLecture: (String) -> Unit,
     onStartDpp: (String) -> Unit,
     onBack: () -> Unit,
+    onUploadCourse: (
+        title: String,
+        categoryTag: String,
+        plansCsv: String,
+        instructorName: String,
+        priceRupees: Int,
+        storageBucketOrBannerUrl: String,
+        description: String
+    ) -> Unit = { _, _, _, _, _, _, _ -> },
     userUid: String? = null,
     userEmail: String? = null,
     modifier: Modifier = Modifier
@@ -92,7 +106,7 @@ fun TeacherAdminScreen(
     var passwordInput by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var passwordError by remember { mutableStateOf<String?>(null) }
-    var selectedSection by remember { mutableIntStateOf(0) } // 0: Video, 1: DPP, 2: Material, 3: Manage
+    var selectedSection by remember { mutableIntStateOf(0) } // 0: Video, 1: DPP, 2: Material, 3: Manage, 4: Storage & Course
 
     // --- Tab 0: Video Upload Form State ---
     var videoTitle by remember { mutableStateOf("") }
@@ -165,6 +179,29 @@ fun TeacherAdminScreen(
             "Handwritten Notes",
             "Test Series Link"
         )
+    }
+
+    // --- Tab 4: Firebase Storage & Course Batch Publisher State ---
+    var courseTitle by remember { mutableStateOf("HACKING COURSE 2027") }
+    var courseCategoryTag by remember { mutableStateOf("HACKER") }
+    var coursePlans by remember { mutableStateOf("Infinity, Pro") }
+    var courseInstructor by remember {
+        mutableStateOf("Lead Hacker Mentor (Sunglasses & Blue-Green Emblem Faculty)")
+    }
+    var coursePrice by remember { mutableStateOf("499") }
+    var courseStorageUrl by remember {
+        mutableStateOf("${ExternalStudyLinks.FIREBASE_STORAGE_BUCKET}/courses/hacking_course_2027")
+    }
+    var courseDescription by remember {
+        mutableStateOf("Multiple plans inside: Infinity, Pro 👑 • Official HACKING COURSE 2027 featuring designated HACKER badge, hands-on Cyber Defense, Ethical Hacking labs & Firebase Cloud Storage assets.")
+    }
+
+    val bannerPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            courseStorageUrl = uri.toString()
+        }
     }
 
     Scaffold(
@@ -451,63 +488,10 @@ fun TeacherAdminScreen(
                                 }
                             }
 
-                            // Teacher Firebase UID & Project Info Bar
-                            Surface(
-                                shape = RoundedCornerShape(10.dp),
-                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 10.dp, vertical = 6.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = "Teacher Firebase UID: ${userUid ?: "Offline Mode (Sign in for Cloud UID)"}",
-                                            style = MaterialTheme.typography.labelSmall.copy(
-                                                fontFamily = FontFamily.Monospace,
-                                                fontWeight = FontWeight.Bold
-                                            ),
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                        Text(
-                                            text = "Project: gen-lang-client-0387332814${if (!userEmail.isNullOrBlank()) " • $userEmail" else ""}",
-                                            style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                    val copyTarget = userUid ?: "gen-lang-client-0387332814"
-                                    TextButton(
-                                        onClick = {
-                                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
-                                            clipboard?.setPrimaryClip(ClipData.newPlainText("Firebase UID", copyTarget))
-                                            adminUidCopied = true
-                                        },
-                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                                        modifier = Modifier.testTag("admin_copy_firebase_uid_button")
-                                    ) {
-                                        Icon(
-                                            imageVector = if (adminUidCopied) Icons.Filled.Check else Icons.Filled.ContentCopy,
-                                            contentDescription = "Copy UID",
-                                            modifier = Modifier.size(14.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(
-                                            text = if (adminUidCopied) "Copied" else "Copy UID",
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
-                                }
-                            }
-
                             // Sub-tab selector
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 AdminTabButton(
                                     label = "🎬 Video",
@@ -531,7 +515,14 @@ fun TeacherAdminScreen(
                                     modifier = Modifier.weight(1f)
                                 )
                                 AdminTabButton(
-                                    label = "🗂️ Manage (${teacherUploads.size})",
+                                    label = "☁️ Course",
+                                    selected = selectedSection == 4,
+                                    testTag = "upload_course_storage_tab",
+                                    onClick = { selectedSection = 4 },
+                                    modifier = Modifier.weight(1f)
+                                )
+                                AdminTabButton(
+                                    label = "🗂️ (${teacherUploads.size})",
                                     selected = selectedSection == 3,
                                     testTag = "manage_uploads_tab",
                                     onClick = { selectedSection = 3 },
@@ -1334,7 +1325,7 @@ fun TeacherAdminScreen(
                 // =============================================================
                 // TAB 3: MANAGE UPLOADED CONTENT & STUDY VAULT
                 // =============================================================
-                else -> {
+                3 -> {
                     item {
                         Text(
                             text = "Teacher Uploaded Items (${teacherUploads.size})",
@@ -1555,6 +1546,245 @@ fun TeacherAdminScreen(
                                             tint = IndigoPrimary
                                         )
                                     }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // =============================================================
+                // TAB 4: FIREBASE CLOUD STORAGE & COURSE BATCH PUBLISHER
+                // =============================================================
+                else -> {
+                    item {
+                        Card(
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            border = CardDefaults.outlinedCardBorder(),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(18.dp),
+                                verticalArrangement = Arrangement.spacedBy(14.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.CloudQueue,
+                                            contentDescription = null,
+                                            tint = IndigoPrimary
+                                        )
+                                        Column {
+                                            Text(
+                                                text = "Firebase Cloud Storage & Course Studio",
+                                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                                            )
+                                            Text(
+                                                text = "Bucket: ${ExternalStudyLinks.FIREBASE_STORAGE_BUCKET}",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+
+                                    FilledTonalButton(
+                                        onClick = { uriHandler.openUri(ExternalStudyLinks.FIREBASE_STORAGE_CONSOLE_URL) },
+                                        shape = RoundedCornerShape(10.dp),
+                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                                        modifier = Modifier.testTag("open_firebase_storage_console_btn")
+                                    ) {
+                                        Icon(Icons.Filled.OpenInNew, contentDescription = null, modifier = Modifier.size(14.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Storage Console", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+
+                                // Featured HACKING COURSE 2027 Banner Preview
+                                Card(
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFBEB)),
+                                    border = CardDefaults.outlinedCardBorder(),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Column {
+                                        Image(
+                                            painter = painterResource(id = R.drawable.hacking_course_2027_banner),
+                                            contentDescription = "HACKING COURSE 2027 Poster",
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(175.dp)
+                                        )
+                                        Column(
+                                            modifier = Modifier.padding(12.dp),
+                                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Text(
+                                                    text = "👑 Multiple plans inside: Infinity, Pro",
+                                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.ExtraBold),
+                                                    color = Color(0xFF78350F)
+                                                )
+                                                Surface(
+                                                    shape = RoundedCornerShape(12.dp),
+                                                    color = Color(0xFFFDE68A),
+                                                    modifier = Modifier.border(1.dp, Color(0xFF78350F), RoundedCornerShape(12.dp))
+                                                ) {
+                                                    Text(
+                                                        text = "HACKER",
+                                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
+                                                        color = Color(0xFF1E1B4B),
+                                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                                    )
+                                                }
+                                            }
+                                            Text(
+                                                text = "HACKING COURSE 2027 (Active in Batches & Home)",
+                                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                                color = Color(0xFF1E1B4B)
+                                            )
+                                        }
+                                    }
+                                }
+
+                                OutlinedTextField(
+                                    value = courseTitle,
+                                    onValueChange = { courseTitle = it },
+                                    label = { Text("Course Name *") },
+                                    placeholder = { Text("HACKING COURSE 2027") },
+                                    singleLine = true,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .testTag("teacher_course_title_input")
+                                )
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    OutlinedTextField(
+                                        value = courseCategoryTag,
+                                        onValueChange = { courseCategoryTag = it },
+                                        label = { Text("Feature Badge / Tag") },
+                                        placeholder = { Text("HACKER") },
+                                        singleLine = true,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .testTag("teacher_course_tag_input")
+                                    )
+                                    OutlinedTextField(
+                                        value = coursePlans,
+                                        onValueChange = { coursePlans = it },
+                                        label = { Text("Plans (👑)") },
+                                        placeholder = { Text("Infinity, Pro") },
+                                        singleLine = true,
+                                        modifier = Modifier
+                                            .weight(1.3f)
+                                            .testTag("teacher_course_plans_input")
+                                    )
+                                }
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    OutlinedTextField(
+                                        value = courseInstructor,
+                                        onValueChange = { courseInstructor = it },
+                                        label = { Text("Instructor Name") },
+                                        singleLine = true,
+                                        modifier = Modifier
+                                            .weight(1.6f)
+                                            .testTag("teacher_course_instructor_input")
+                                    )
+                                    OutlinedTextField(
+                                        value = coursePrice,
+                                        onValueChange = { coursePrice = it.filter { ch -> ch.isDigit() } },
+                                        label = { Text("Price (₹)") },
+                                        singleLine = true,
+                                        modifier = Modifier
+                                            .weight(0.8f)
+                                            .testTag("teacher_course_price_input")
+                                    )
+                                }
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    OutlinedTextField(
+                                        value = courseStorageUrl,
+                                        onValueChange = { courseStorageUrl = it },
+                                        label = { Text("Firebase Storage Bucket Path / Banner URL") },
+                                        singleLine = true,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .testTag("teacher_course_storage_url_input")
+                                    )
+                                    FilledTonalButton(
+                                        onClick = {
+                                            bannerPickerLauncher.launch(
+                                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)
+                                            )
+                                        },
+                                        shape = RoundedCornerShape(12.dp),
+                                        modifier = Modifier.testTag("pick_storage_banner_btn")
+                                    ) {
+                                        Icon(Icons.Filled.CloudUpload, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Pick File", fontSize = 12.sp)
+                                    }
+                                }
+
+                                OutlinedTextField(
+                                    value = courseDescription,
+                                    onValueChange = { courseDescription = it },
+                                    label = { Text("Course Description & Plan Highlights") },
+                                    minLines = 3,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .testTag("teacher_course_desc_input")
+                                )
+
+                                Button(
+                                    onClick = {
+                                        val parsedPrice = coursePrice.toIntOrNull() ?: 499
+                                        onUploadCourse(
+                                            courseTitle,
+                                            courseCategoryTag,
+                                            coursePlans,
+                                            courseInstructor,
+                                            parsedPrice,
+                                            courseStorageUrl,
+                                            courseDescription
+                                        )
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = IndigoPrimary),
+                                    shape = RoundedCornerShape(14.dp),
+                                    contentPadding = PaddingValues(vertical = 14.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .testTag("publish_course_storage_button")
+                                ) {
+                                    Icon(Icons.Filled.CloudDone, contentDescription = null)
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "Publish Course & Sync Firebase Storage Path",
+                                        fontWeight = FontWeight.Bold
+                                    )
                                 }
                             }
                         }

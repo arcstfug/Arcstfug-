@@ -1,7 +1,9 @@
 package com.example.ui.screens
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,8 +19,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -86,60 +90,126 @@ fun BatchDetailScreen(
         ) {
             // Batch Info Card
             item {
+                var selectedPlan by remember(course.availablePlans) {
+                    mutableStateOf(course.availablePlans.firstOrNull() ?: "Infinity")
+                }
                 Card(
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     border = CardDefaults.outlinedCardBorder(),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                Brush.linearGradient(
-                                    listOf(Color(course.bannerColorHex), Color(0xFF1E1B4B))
-                                )
+                    Column {
+                        if (course.bannerDrawableRes != null) {
+                            Image(
+                                painter = painterResource(id = course.bannerDrawableRes),
+                                contentDescription = course.title,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(210.dp)
                             )
-                            .padding(18.dp)
-                    ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Surface(
-                                    shape = RoundedCornerShape(6.dp),
-                                    color = Color(0x35FFFFFF)
+                        }
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    Brush.linearGradient(
+                                        listOf(Color(course.bannerColorHex), Color(0xFF1E1B4B))
+                                    )
+                                )
+                                .padding(18.dp)
+                        ) {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
+                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Surface(
+                                            shape = RoundedCornerShape(6.dp),
+                                            color = Color(0x35FFFFFF)
+                                        ) {
+                                            Text(
+                                                text = course.category,
+                                                color = Color.White,
+                                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                            )
+                                        }
+                                        if (!course.featureBadge.isNullOrBlank()) {
+                                            Surface(
+                                                shape = RoundedCornerShape(20.dp),
+                                                color = Color(0xFFFDE68A),
+                                                modifier = Modifier.border(1.dp, Color(0xFF78350F), RoundedCornerShape(20.dp))
+                                            ) {
+                                                Text(
+                                                    text = course.featureBadge,
+                                                    color = Color(0xFF1E1B4B),
+                                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
+                                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                                                )
+                                            }
+                                        }
+                                    }
                                     Text(
-                                        text = course.category,
+                                        text = "⭐ ${course.rating} • ${course.enrolledCount}",
                                         color = Color.White,
-                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                        style = MaterialTheme.typography.labelSmall
                                     )
                                 }
                                 Text(
-                                    text = "⭐ ${course.rating} • ${course.enrolledCount}",
+                                    text = course.title,
                                     color = Color.White,
-                                    style = MaterialTheme.typography.labelSmall
+                                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
                                 )
+                                if (course.availablePlans.isNotEmpty()) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Text(
+                                            text = "👑 Multiple plans inside:",
+                                            color = Color(0xFFFDE68A),
+                                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                                        )
+                                        course.availablePlans.forEach { plan ->
+                                            val isSelected = selectedPlan == plan
+                                            Surface(
+                                                shape = RoundedCornerShape(10.dp),
+                                                color = if (isSelected) Color(0xFFFDE68A) else Color(0x35FFFFFF),
+                                                modifier = Modifier.clickable { selectedPlan = plan }
+                                            ) {
+                                                Text(
+                                                    text = "👑 $plan",
+                                                    color = if (isSelected) Color(0xFF1E1B4B) else Color.White,
+                                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
+                                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                                Text(
+                                    text = course.description,
+                                    color = Color(0xFFE2E8F0),
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "Mentors: ${course.instructorTeam}",
+                                    color = CyanAccent,
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold)
+                                )
+                                if (!course.storageBucketUrl.isNullOrBlank()) {
+                                    Text(
+                                        text = "☁️ Firebase Storage Vault: ${course.storageBucketUrl}",
+                                        color = Color(0xFFBAE6FD),
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                }
                             }
-                            Text(
-                                text = course.title,
-                                color = Color.White,
-                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-                            )
-                            Text(
-                                text = course.description,
-                                color = Color(0xFFE2E8F0),
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "Mentors: ${course.instructorTeam}",
-                                color = CyanAccent,
-                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold)
-                            )
                         }
                     }
                 }

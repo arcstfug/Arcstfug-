@@ -75,7 +75,7 @@ service cloud.firestore {
     function isValidTeacherUpload(data) {
       return data.authorId is string && data.authorId == request.auth.uid && data.authorId.size() >= 1 && data.authorId.size() <= 128 &&
              data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 100 &&
-             data.uploadType is string && (data.uploadType == 'VIDEO' || data.uploadType == 'DPP' || data.uploadType == 'MATERIAL') &&
+             data.uploadType is string && (data.uploadType == 'VIDEO' || data.uploadType == 'DPP' || data.uploadType == 'MATERIAL' || data.uploadType == 'COURSE') &&
              data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
              data.subject is string && data.subject.size() >= 1 && data.subject.size() <= 50 &&
              data.chapterTitle is string && data.chapterTitle.size() >= 1 && data.chapterTitle.size() <= 200 &&

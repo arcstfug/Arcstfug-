@@ -103,12 +103,18 @@ data class CourseBatch(
     val syllabusCoveragePercent: Int,
     val isEnrolled: Boolean,
     val bannerColorHex: Long,
-    val subjects: List<SubjectDetail>
+    val subjects: List<SubjectDetail>,
+    val bannerDrawableRes: Int? = null,
+    val availablePlans: List<String> = emptyList(),
+    val featureBadge: String? = null,
+    val storageBucketUrl: String? = null
 )
 
 object ExternalStudyLinks {
     const val PHYSICS_DRIVE_URL = "https://drive.google.com/drive/folders/1-Gii-7kSrT4Do8x6TkO3mhy4IxeP2o57"
     const val ALL_INDIA_TEST_SERIES_URL = "https://deltastudy.fun/missionjeet/251"
+    const val FIREBASE_STORAGE_BUCKET = "gs://gen-lang-client-0387332814.appspot.com"
+    const val FIREBASE_STORAGE_CONSOLE_URL = "https://console.firebase.google.com/project/gen-lang-client-0387332814/storage"
 }
 
 data class StudyMaterial(

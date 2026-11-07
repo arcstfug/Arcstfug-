@@ -225,8 +225,8 @@
         },
         "uploadType": {
           "type": "string",
-          "enum": ["VIDEO", "DPP", "MATERIAL"],
-          "description": "Type of uploaded item: VIDEO, DPP, or MATERIAL."
+          "enum": ["VIDEO", "DPP", "MATERIAL", "COURSE"],
+          "description": "Type of uploaded item: VIDEO, DPP, MATERIAL, or COURSE."
         },
         "title": {
           "type": "string",

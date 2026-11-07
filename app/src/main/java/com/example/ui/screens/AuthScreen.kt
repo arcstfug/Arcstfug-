@@ -2,15 +2,20 @@ package com.example.ui.screens
 
 import android.app.Activity
 import android.content.Context
+import android.content.ContextWrapper
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudDone
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.*
@@ -47,6 +52,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 private const val TAG = "Auth"
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
 
 private fun isFirebaseInitialized(context: Context): Boolean {
     return runCatching { FirebaseApp.getApps(context).isNotEmpty() }.getOrDefault(false)
@@ -85,7 +96,8 @@ fun attemptAutoSignIn(
 
     scope.launch {
         try {
-            val result = credentialManager.getCredential(context, request)
+            val activityContext = context.findActivity() ?: context
+            val result = credentialManager.getCredential(activityContext, request)
             val credential = result.credential
             if (credential is CustomCredential && credential.type == TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
                 val googleIdToken = GoogleIdTokenCredential.createFrom(credential.data).idToken
@@ -110,12 +122,12 @@ fun onGoogleSignInClicked(
     onAuthCancelled: () -> Unit = {}
 ) {
     if (!isFirebaseInitialized(context)) {
-        onAuthError("Cloud configuration (google-services.json) is not bundled in this APK build. Tap 'Continue in Offline Study Mode' below.")
+        onAuthError("Cloud configuration is not bundled in this build. Enter your Student Name below to login directly.")
         return
     }
     val clientId = runCatching { context.getString(R.string.default_web_client_id) }.getOrNull()
     if (clientId.isNullOrBlank()) {
-        onAuthError("Google Sign-In configuration missing: default_web_client_id not found. You can continue in Offline Study Mode below.")
+        onAuthError("Google Sign-In configuration missing: default_web_client_id not found. Enter your Student Name below to login directly.")
         return
     }
 
@@ -126,7 +138,7 @@ fun onGoogleSignInClicked(
 
     scope.launch {
         try {
-            val activityContext = context as? Activity ?: context
+            val activityContext = context.findActivity() ?: context
             val result = credentialManager.getCredential(activityContext, request)
             val credential = result.credential
             if (credential is CustomCredential && credential.type == TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
@@ -193,7 +205,10 @@ fun GoogleSignInButton(
                     onAuthError(errorMsg)
                 },
                 scope = coroutineScope,
-                onAuthCancelled = { isLoading = false }
+                onAuthCancelled = {
+                    isLoading = false
+                    onAuthError("Google Account selector closed or APK certificate mismatch. Download the latest APK build or enter your Student Name & Gmail below to login immediately.")
+                }
             )
         },
         enabled = !isLoading,
@@ -232,12 +247,15 @@ fun GoogleSignInButton(
 fun AuthScreen(
     onAuthSuccess: () -> Unit,
     onContinueOffline: (() -> Unit)? = null,
+    onLoginWithStudentProfile: ((studentName: String, studentEmail: String) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val credentialManager = remember(context) { CredentialManager.create(context) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var studentNameInput by remember { mutableStateOf("") }
+    var studentEmailInput by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         attemptAutoSignIn(
@@ -256,7 +274,8 @@ fun AuthScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(24.dp),
+                .verticalScroll(rememberScrollState())
+                .padding(20.dp),
             contentAlignment = Alignment.Center
         ) {
             Card(
@@ -268,16 +287,16 @@ fun AuthScreen(
                     .widthIn(max = 460.dp)
             ) {
                 Column(
-                    modifier = Modifier.padding(24.dp),
+                    modifier = Modifier.padding(22.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.arcstfug_logo),
                         contentDescription = "ARCSTFUG Official Crest",
                         contentScale = ContentScale.Fit,
                         modifier = Modifier
-                            .size(84.dp)
+                            .size(76.dp)
                             .clip(RoundedCornerShape(16.dp))
                             .background(Color.White)
                             .border(2.dp, AmberStreak, RoundedCornerShape(16.dp))
@@ -294,44 +313,11 @@ fun AuthScreen(
                             textAlign = TextAlign.Center
                         )
                         Text(
-                            text = "Empowering Minds, Shaping Futures • JEE & NEET Prep",
-                            style = MaterialTheme.typography.bodySmall,
+                            text = "HACKING COURSE 2027 • JEE & NEET Prep",
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
                             color = MaterialTheme.colorScheme.primary,
                             textAlign = TextAlign.Center
                         )
-                    }
-
-                    Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(14.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.CloudDone,
-                                    contentDescription = null,
-                                    tint = IndigoPrimary,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Text(
-                                    text = "Cloud Sync & Student Account",
-                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                            Text(
-                                text = "Sign in with Google to securely sync your student profile, H.C. Verma & Cengage DPP scores, lecture progress, and Gemini AI Tutor doubts across devices.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
                     }
 
                     if (errorMessage != null) {
@@ -350,6 +336,7 @@ fun AuthScreen(
                         }
                     }
 
+                    // 1. Primary Google Sign-In via Credential Manager
                     GoogleSignInButton(
                         onAuthSuccess = {
                             errorMessage = null
@@ -360,9 +347,60 @@ fun AuthScreen(
                         }
                     )
 
-                    if (onContinueOffline != null) {
-                        OutlinedButton(
-                            onClick = onContinueOffline,
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        HorizontalDivider(modifier = Modifier.weight(1f))
+                        Text(
+                            text = "OR LOGIN WITH STUDENT DETAILS",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        HorizontalDivider(modifier = Modifier.weight(1f))
+                    }
+
+                    // 2. Direct Student Name & Gmail Login Box (works instantly on all APK builds)
+                    OutlinedTextField(
+                        value = studentNameInput,
+                        onValueChange = { studentNameInput = it },
+                        label = { Text("Student Name") },
+                        placeholder = { Text("Enter your full name") },
+                        singleLine = true,
+                        leadingIcon = {
+                            Icon(Icons.Filled.Person, contentDescription = null, tint = IndigoPrimary)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("auth_student_name_input")
+                    )
+
+                    OutlinedTextField(
+                        value = studentEmailInput,
+                        onValueChange = { studentEmailInput = it },
+                        label = { Text("Google / Gmail Address (Optional)") },
+                        placeholder = { Text("student@gmail.com") },
+                        singleLine = true,
+                        leadingIcon = {
+                            Icon(Icons.Filled.Email, contentDescription = null, tint = IndigoPrimary)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("auth_student_email_input")
+                    )
+
+                    if (onContinueOffline != null || onLoginWithStudentProfile != null) {
+                        FilledTonalButton(
+                            onClick = {
+                                val cleanName = studentNameInput.trim().ifEmpty { "Student Name" }
+                                val cleanEmail = studentEmailInput.trim()
+                                if (onLoginWithStudentProfile != null) {
+                                    onLoginWithStudentProfile(cleanName, cleanEmail)
+                                } else {
+                                    onContinueOffline?.invoke()
+                                }
+                            },
                             shape = RoundedCornerShape(14.dp),
                             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
                             modifier = Modifier
@@ -377,8 +415,8 @@ fun AuthScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Continue in Offline Study Mode",
-                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold)
+                                text = "Login & Start Learning",
+                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
                             )
                         }
                     }
