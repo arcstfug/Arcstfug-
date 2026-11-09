@@ -406,7 +406,7 @@ class CloudSyncRepository(
         val safeId = uploadId.replace("[^a-zA-Z0-9_\\-]".toRegex(), "_").take(100).ifEmpty { "up_${System.currentTimeMillis()}" }
         val docRef = db.collection("teacher_uploads").document(safeId)
         val normalizedType = when (uploadType.uppercase()) {
-            "VIDEO", "DPP", "MATERIAL" -> uploadType.uppercase()
+            "VIDEO", "DPP", "MATERIAL", "COURSE" -> uploadType.uppercase()
             else -> "MATERIAL"
         }
         return try {

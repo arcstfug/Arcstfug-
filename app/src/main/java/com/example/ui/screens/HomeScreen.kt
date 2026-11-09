@@ -363,14 +363,311 @@ fun HomeScreen(
             }
         }
 
-        // Direct Study Vault & Live Portals (Physics Google Drive + All India Test Series)
+        // Direct Study Vault & Live Portals (ARCSTFUG Web App + JEE Physics Vault + EJEE Books + Allen + JEE Adv PYQs + AITS)
         item {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
-                    text = "Official Study Vault & Live Test Portal",
+                    text = "Official Study Vault, Books & Live Web Portals",
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.onSurface
                 )
+
+                // 0) ARCSTFUG Official Web App Portal (arcstfug-app.netlify.app)
+                Card(
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = CardDefaults.outlinedCardBorder(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { uriHandler.openUri(ExternalStudyLinks.ARCSTFUG_WEB_PORTAL_URL) }
+                        .testTag("home_arcstfug_web_portal_card")
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                Brush.horizontalGradient(
+                                    listOf(
+                                        IndigoPrimary.copy(alpha = 0.14f),
+                                        CyanAccent.copy(alpha = 0.12f)
+                                    )
+                                )
+                            )
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(IndigoPrimary),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Language,
+                                contentDescription = "ARCSTFUG Official Web App",
+                                tint = Color.White,
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "ARCSTFUG Official Web App Portal",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "https://arcstfug-app.netlify.app/ • Live Study Web Portal",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+                        Button(
+                            onClick = { uriHandler.openUri(ExternalStudyLinks.ARCSTFUG_WEB_PORTAL_URL) },
+                            colors = ButtonDefaults.buttonColors(containerColor = IndigoPrimary),
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                            modifier = Modifier.testTag("open_arcstfug_web_btn")
+                        ) {
+                            Text("Open Web", fontSize = 12.sp, color = Color.White)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(
+                                imageVector = Icons.Filled.OpenInNew,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = Color.White
+                            )
+                        }
+                    }
+                }
+
+                // ⚡ JEE PHYSICS VAULT | DROP #01 (DC Pandey, HC Verma, Irodov)
+                Card(
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = CardDefaults.outlinedCardBorder(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("home_jee_physics_vault_drop1_card")
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = PhysicsColor.copy(alpha = 0.15f)
+                            ) {
+                                Text(
+                                    text = "⚡ DROP #01",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
+                                    color = PhysicsColor,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                            Column {
+                                Text(
+                                    text = "⚡ JEE PHYSICS VAULT | DROP #01",
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "Shared by Abhishek Kumar • Complete Google Drive Folders",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = { uriHandler.openUri(ExternalStudyLinks.DC_PANDEY_DRIVE_URL) },
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .testTag("open_dc_pandey_btn")
+                            ) {
+                                Text("📘 DC Pandey", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                            OutlinedButton(
+                                onClick = { uriHandler.openUri(ExternalStudyLinks.HC_VERMA_DRIVE_URL) },
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .testTag("open_hc_verma_btn")
+                            ) {
+                                Text("📗 HC Verma", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                            OutlinedButton(
+                                onClick = { uriHandler.openUri(ExternalStudyLinks.IRODOV_DRIVE_URL) },
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .testTag("open_irodov_btn")
+                            ) {
+                                Text("📕 Irodov", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+
+                // 📚 EJEE Books PDF – Google Drive Links (All in One)
+                Card(
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = CardDefaults.outlinedCardBorder(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("home_ejee_books_pdf_card")
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "📚 EJEE Books PDF – Google Drive Links (All in One)",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "Access and download all important EJEE preparation PDFs anytime 👇",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        val ejeeLinks = listOf(
+                            Triple("📘 Inorganic Chemistry (IOC) – Om Pandey Sir", ExternalStudyLinks.IOC_OM_PANDEY_URL, "open_ioc_om_pandey_btn"),
+                            Triple("📗 Organic Chemistry – Rohit Agarwal Sir", ExternalStudyLinks.OC_ROHIT_AGARWAL_URL, "open_oc_rohit_agarwal_btn"),
+                            Triple("📙 Physical Chemistry – Complete Book PDF", ExternalStudyLinks.PHYSICAL_CHEM_URL, "open_physical_chem_btn"),
+                            Triple("📕 Maths (Class 11) – Sachin Sir", ExternalStudyLinks.MATHS_SACHIN_SIR_URL, "open_maths_sachin_sir_btn"),
+                            Triple("📓 SKC Class 11 Full Book – Dhirendra Kumar", ExternalStudyLinks.SKC_CLASS_11_BOOK_URL, "open_skc_book_btn")
+                        )
+
+                        ejeeLinks.forEach { (label, url, tag) ->
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { uriHandler.openUri(url) }
+                                    .testTag(tag)
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = label,
+                                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Icon(
+                                        imageVector = Icons.Filled.OpenInNew,
+                                        contentDescription = "Open PDF",
+                                        tint = IndigoPrimary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Allen Modules & Allen Material + 📚 JEE Advanced PYQs (2010–2025)
+                Card(
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = CardDefaults.outlinedCardBorder(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("home_allen_and_pyq_card")
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text(
+                            text = "📂 Allen Study Material & 📚 JEE Advanced PYQs (2010–2025)",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "✅ Year-wise Question Papers (2010–2025) • ✅ Allen Modules & Classroom Material",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            FilledTonalButton(
+                                onClick = { uriHandler.openUri(ExternalStudyLinks.ALLEN_MODULES_URL) },
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .testTag("open_allen_modules_btn")
+                            ) {
+                                Text("📂 Allen Modules", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                            FilledTonalButton(
+                                onClick = { uriHandler.openUri(ExternalStudyLinks.ALLEN_MATERIAL_URL) },
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .testTag("open_allen_material_btn")
+                            ) {
+                                Text("📂 Allen Material", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        Button(
+                            onClick = { uriHandler.openUri(ExternalStudyLinks.JEE_ADV_PYQ_2010_2025_URL) },
+                            colors = ButtonDefaults.buttonColors(containerColor = AmberStreak),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("open_jee_adv_pyq_btn")
+                        ) {
+                            Text(
+                                text = "📚 JEE Advanced PYQs (2010–2025) Drive",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Icon(
+                                imageVector = Icons.Filled.OpenInNew,
+                                contentDescription = null,
+                                modifier = Modifier.size(15.dp),
+                                tint = Color.White
+                            )
+                        }
+                    }
+                }
 
                 // 1) Physics Google Drive Vault Card
                 Card(

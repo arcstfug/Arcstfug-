@@ -649,12 +649,37 @@ fun TeacherAdminScreen(
                                     value = videoUrl,
                                     onValueChange = { videoUrl = it },
                                     label = { Text("Video URL (YouTube / Google Drive / Stream Link)") },
-                                    placeholder = { Text("https://drive.google.com/... or select local video below") },
+                                    placeholder = { Text("https://drive.google.com/... or select below") },
                                     singleLine = true,
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .testTag("teacher_video_url_input")
                                 )
+
+                                // Quick Cloud Vault Selector for Emulator Preview (where device gallery is empty)
+                                Text(
+                                    text = "☁️ Quick Attach Cloud Link (For Emulator Preview without Local Files):",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = IndigoPrimary
+                                )
+                                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    val cloudVideoPresets = listOf(
+                                        Triple("⚡ Physics Vault Drive", ExternalStudyLinks.PHYSICS_DRIVE_URL, "Lec: Physics Vault Video Lecture"),
+                                        Triple("📘 DC Pandey Vault", ExternalStudyLinks.DC_PANDEY_DRIVE_URL, "Lec: DC Pandey Problem Solving Session"),
+                                        Triple("📗 HC Verma Vault", ExternalStudyLinks.HC_VERMA_DRIVE_URL, "Lec: HC Verma Conceptual Discussion"),
+                                        Triple("📂 Allen Modules Drive", ExternalStudyLinks.ALLEN_MODULES_URL, "Lec: Allen Module Classroom Discussion"),
+                                        Triple("🌐 ARCSTFUG Web Portal", ExternalStudyLinks.ARCSTFUG_WEB_PORTAL_URL, "Lec: ARCSTFUG Live Portal Class")
+                                    )
+                                    items(cloudVideoPresets) { (label, presetUrl, presetTitle) ->
+                                        AssistChip(
+                                            onClick = {
+                                                videoUrl = presetUrl
+                                                if (videoTitle.isBlank()) videoTitle = presetTitle
+                                            },
+                                            label = { Text(label, fontSize = 11.sp) }
+                                        )
+                                    }
+                                }
 
                                 OutlinedButton(
                                     onClick = {
@@ -674,7 +699,7 @@ fun TeacherAdminScreen(
                                         modifier = Modifier.size(18.dp)
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Select Video File from Device (Photo Picker)")
+                                    Text("Select Video File from Real Phone Gallery")
                                 }
 
                                 OutlinedTextField(
@@ -826,6 +851,78 @@ fun TeacherAdminScreen(
                                             .weight(1.6f)
                                             .testTag("teacher_dpp_source_input")
                                     )
+                                }
+
+                                // 1-Tap Quick Question Templates for Emulator Preview (No local file needed)
+                                Text(
+                                    text = "⚡ 1-Tap Fill Sample Question in Preview (No File Needed):",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = IndigoPrimary
+                                )
+                                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    item {
+                                        AssistChip(
+                                            onClick = {
+                                                dppSubject = SubjectType.PHYSICS
+                                                if (dppTitle.isBlank()) dppTitle = "DPP: Rotational Mechanics & Moment of Inertia"
+                                                dppChapter = "Chapter 10: Rotational Mechanics"
+                                                dppSourceBook = "H.C. Verma & DC Pandey Vault"
+                                                draftQuestionText = "A uniform solid sphere of mass M and radius R rolls without slipping down an inclined plane of angle θ. What is the linear acceleration of its center of mass?"
+                                                draftOptA = "(5/7) g sin θ"
+                                                draftOptB = "(2/5) g sin θ"
+                                                draftOptC = "(2/3) g sin θ"
+                                                draftOptD = "g sin θ"
+                                                draftCorrectIndices = setOf(0)
+                                                draftIsMultiSelect = false
+                                                draftHint = "Use a = g sin θ / (1 + I / mR²) where I = (2/5)mR² for a solid sphere."
+                                                draftExplanation = "For rolling without slipping, a_cm = g sin θ / (1 + k²/R²). For a solid sphere, k²/R² = 2/5. Hence a_cm = g sin θ / (7/5) = (5/7) g sin θ."
+                                                draftTopic = "Rolling Motion"
+                                            },
+                                            label = { Text("⚡ + Physics MCQ", fontSize = 11.sp) }
+                                        )
+                                    }
+                                    item {
+                                        AssistChip(
+                                            onClick = {
+                                                dppSubject = SubjectType.CHEMISTRY
+                                                if (dppTitle.isBlank()) dppTitle = "DPP: Chemical Bonding & Hybridization (IOC)"
+                                                dppChapter = "Chemical Bonding"
+                                                dppSourceBook = "Om Pandey Sir (IOC) & RA Sir"
+                                                draftQuestionText = "Which of the following molecules/ions have sp³d hybridization with linear geometry?"
+                                                draftOptA = "XeF₂ and I₃⁻"
+                                                draftOptB = "SF₄ and ClF₃"
+                                                draftOptC = "PCl₅ and SF₆"
+                                                draftOptD = "XeF₄ and BrF₅"
+                                                draftCorrectIndices = setOf(0)
+                                                draftIsMultiSelect = false
+                                                draftHint = "Count steric number = 5 with 3 lone pairs on the central atom."
+                                                draftExplanation = "Both XeF₂ and I₃⁻ have 2 bond pairs + 3 equatorial lone pairs (steric number 5, sp³d), resulting in a linear shape."
+                                                draftTopic = "VSEPR & Hybridization"
+                                            },
+                                            label = { Text("🧪 + Chemistry MCQ", fontSize = 11.sp) }
+                                        )
+                                    }
+                                    item {
+                                        AssistChip(
+                                            onClick = {
+                                                dppSubject = SubjectType.MATHEMATICS
+                                                if (dppTitle.isBlank()) dppTitle = "DPP: Quadratic Equations & Complex Numbers"
+                                                dppChapter = "Class 11 Algebra"
+                                                dppSourceBook = "Sachin Sir & Cengage Algebra"
+                                                draftQuestionText = "If α and β are the roots of x² - 6x + 12 = 0, then the value of α² + β² is:"
+                                                draftOptA = "12"
+                                                draftOptB = "24"
+                                                draftOptC = "36"
+                                                draftOptD = "0"
+                                                draftCorrectIndices = setOf(0)
+                                                draftIsMultiSelect = false
+                                                draftHint = "Use α² + β² = (α + β)² - 2αβ."
+                                                draftExplanation = "Here α + β = 6 and αβ = 12. Therefore α² + β² = 6² - 2(12) = 36 - 24 = 12."
+                                                draftTopic = "Quadratic Roots"
+                                            },
+                                            label = { Text("📐 + Maths MCQ", fontSize = 11.sp) }
+                                        )
+                                    }
                                 }
 
                                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
@@ -1027,7 +1124,7 @@ fun TeacherAdminScreen(
                                 // Added Questions Preview List
                                 if (draftQuestions.isNotEmpty()) {
                                     Text(
-                                        text = "Questions in Draft (${draftQuestions.size}):",
+                                        text = "Questions in Draft (${draftQuestions.size}) — Tap ✏️ to Edit:",
                                         style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                                         color = EmeraldSuccess
                                     )
@@ -1040,7 +1137,7 @@ fun TeacherAdminScreen(
                                             Row(
                                                 modifier = Modifier.padding(12.dp),
                                                 verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                                horizontalArrangement = Arrangement.spacedBy(6.dp)
                                             ) {
                                                 Column(modifier = Modifier.weight(1f)) {
                                                     Text(
@@ -1057,8 +1154,33 @@ fun TeacherAdminScreen(
                                                 }
                                                 IconButton(
                                                     onClick = {
+                                                        draftQuestionText = q.questionText
+                                                        draftOptA = q.options.getOrElse(0) { "" }
+                                                        draftOptB = q.options.getOrElse(1) { "" }
+                                                        draftOptC = q.options.getOrElse(2) { "" }
+                                                        draftOptD = q.options.getOrElse(3) { "" }
+                                                        draftCorrectIndices = q.correctOptionIndices.ifEmpty { setOf(q.correctOptionIndex) }
+                                                        draftIsMultiSelect = q.isMultiSelect
+                                                        draftHint = q.hint
+                                                        draftExplanation = q.explanation
+                                                        draftTopic = q.topic
+                                                            .removePrefix("Objective II • ")
+                                                            .removePrefix("Objective I • ")
                                                         draftQuestions = draftQuestions.filterIndexed { i, _ -> i != qIdx }
-                                                    }
+                                                    },
+                                                    modifier = Modifier.testTag("edit_draft_question_$qIdx")
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Filled.Edit,
+                                                        contentDescription = "Edit Question",
+                                                        tint = IndigoPrimary
+                                                    )
+                                                }
+                                                IconButton(
+                                                    onClick = {
+                                                        draftQuestions = draftQuestions.filterIndexed { i, _ -> i != qIdx }
+                                                    },
+                                                    modifier = Modifier.testTag("delete_draft_question_$qIdx")
                                                 ) {
                                                     Icon(
                                                         imageVector = Icons.Filled.DeleteOutline,
@@ -1244,12 +1366,47 @@ fun TeacherAdminScreen(
                                     value = matUrl,
                                     onValueChange = { matUrl = it },
                                     label = { Text("Material Link (Google Drive / PDF URL / Local URI)") },
-                                    placeholder = { Text("https://drive.google.com/... or pick PDF document below") },
+                                    placeholder = { Text("https://drive.google.com/... or pick below") },
                                     singleLine = true,
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .testTag("teacher_material_url_input")
                                 )
+
+                                // Quick Cloud Vault Selector for Emulator Preview (where local files are not present)
+                                Text(
+                                    text = "☁️ Quick Select PDF / Drive from Cloud Vault (For Emulator Preview):",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = EmeraldSuccess
+                                )
+                                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    val cloudMaterialPresets = listOf(
+                                        Triple("📘 DC Pandey Drive", ExternalStudyLinks.DC_PANDEY_DRIVE_URL, SubjectType.PHYSICS),
+                                        Triple("📗 HC Verma Drive", ExternalStudyLinks.HC_VERMA_DRIVE_URL, SubjectType.PHYSICS),
+                                        Triple("📕 Irodov Drive", ExternalStudyLinks.IRODOV_DRIVE_URL, SubjectType.PHYSICS),
+                                        Triple("📘 IOC – Om Pandey PDF", ExternalStudyLinks.IOC_OM_PANDEY_URL, SubjectType.CHEMISTRY),
+                                        Triple("📗 OC – Rohit Agarwal PDF", ExternalStudyLinks.OC_ROHIT_AGARWAL_URL, SubjectType.CHEMISTRY),
+                                        Triple("📙 Physical Chem PDF", ExternalStudyLinks.PHYSICAL_CHEM_URL, SubjectType.CHEMISTRY),
+                                        Triple("📕 Maths – Sachin Sir PDF", ExternalStudyLinks.MATHS_SACHIN_SIR_URL, SubjectType.MATHEMATICS),
+                                        Triple("📓 SKC Class 11 PDF", ExternalStudyLinks.SKC_CLASS_11_BOOK_URL, SubjectType.PHYSICS),
+                                        Triple("📂 Allen Modules", ExternalStudyLinks.ALLEN_MODULES_URL, SubjectType.PHYSICS),
+                                        Triple("📂 Allen Material", ExternalStudyLinks.ALLEN_MATERIAL_URL, SubjectType.CHEMISTRY),
+                                        Triple("📚 JEE Adv PYQs (2010–2025)", ExternalStudyLinks.JEE_ADV_PYQ_2010_2025_URL, SubjectType.MATHEMATICS)
+                                    )
+                                    items(cloudMaterialPresets) { (label, presetUrl, presetSubj) ->
+                                        AssistChip(
+                                            onClick = {
+                                                matUrl = presetUrl
+                                                matSubject = presetSubj
+                                                if (matTitle.isBlank()) matTitle = label
+                                                if (matDescription.isBlank()) {
+                                                    matDescription = "$label — Official Cloud Study Vault resource for JEE Main & Advanced preparation."
+                                                }
+                                            },
+                                            label = { Text(label, fontSize = 11.sp) }
+                                        )
+                                    }
+                                }
 
                                 OutlinedButton(
                                     onClick = {
@@ -1269,7 +1426,7 @@ fun TeacherAdminScreen(
                                         modifier = Modifier.size(18.dp)
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Attach PDF / Notes File from Device (Document Picker)")
+                                    Text("Attach PDF / Notes File from Real Phone Storage")
                                 }
 
                                 OutlinedTextField(
@@ -1416,15 +1573,64 @@ fun TeacherAdminScreen(
                                             )
                                         }
 
-                                        IconButton(
-                                            onClick = { onDeleteUpload(item.id) },
-                                            modifier = Modifier.testTag("delete_upload_${item.id}")
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Filled.DeleteOutline,
-                                                contentDescription = "Delete Upload",
-                                                tint = RoseError
-                                            )
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            IconButton(
+                                                onClick = {
+                                                    when (item.uploadType) {
+                                                        "VIDEO" -> {
+                                                            videoTitle = item.title
+                                                            videoSubject = item.subject
+                                                            videoChapter = item.chapterTitle
+                                                            videoCourseId = item.courseId
+                                                            videoInstructor = item.authorName
+                                                            videoDuration = item.durationMinutes.toString()
+                                                            videoUrl = item.resourceUrl
+                                                            videoNotes = item.description
+                                                            onDeleteUpload(item.id)
+                                                            selectedSection = 0
+                                                        }
+                                                        "DPP" -> {
+                                                            dppTitle = item.title
+                                                            dppSubject = item.subject
+                                                            dppChapter = item.chapterTitle
+                                                            dppCourseId = item.courseId
+                                                            dppTimeLimit = item.durationMinutes.toString()
+                                                            dppSourceBook = item.materialCategory
+                                                            onDeleteUpload(item.id)
+                                                            selectedSection = 1
+                                                        }
+                                                        else -> {
+                                                            matTitle = item.title
+                                                            matSubject = item.subject
+                                                            matChapter = item.chapterTitle
+                                                            matCourseId = item.courseId
+                                                            matCategory = item.materialCategory
+                                                            matUrl = item.resourceUrl
+                                                            matDescription = item.description
+                                                            matAuthor = item.authorName
+                                                            onDeleteUpload(item.id)
+                                                            selectedSection = 2
+                                                        }
+                                                    }
+                                                },
+                                                modifier = Modifier.testTag("edit_upload_${item.id}")
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Filled.Edit,
+                                                    contentDescription = "Edit Upload",
+                                                    tint = IndigoPrimary
+                                                )
+                                            }
+                                            IconButton(
+                                                onClick = { onDeleteUpload(item.id) },
+                                                modifier = Modifier.testTag("delete_upload_${item.id}")
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Filled.DeleteOutline,
+                                                    contentDescription = "Delete Upload",
+                                                    tint = RoseError
+                                                )
+                                            }
                                         }
                                     }
 

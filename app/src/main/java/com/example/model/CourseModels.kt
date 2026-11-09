@@ -111,10 +111,30 @@ data class CourseBatch(
 )
 
 object ExternalStudyLinks {
+    const val ARCSTFUG_WEB_PORTAL_URL = "https://arcstfug-app.netlify.app/"
     const val PHYSICS_DRIVE_URL = "https://drive.google.com/drive/folders/1-Gii-7kSrT4Do8x6TkO3mhy4IxeP2o57"
     const val ALL_INDIA_TEST_SERIES_URL = "https://deltastudy.fun/missionjeet/251"
     const val FIREBASE_STORAGE_BUCKET = "gs://gen-lang-client-0387332814.appspot.com"
     const val FIREBASE_STORAGE_CONSOLE_URL = "https://console.firebase.google.com/project/gen-lang-client-0387332814/storage"
+
+    // ⚡ JEE PHYSICS VAULT | DROP #01
+    const val DC_PANDEY_DRIVE_URL = "https://drive.google.com/drive/folders/1yK-e7N86xzFWaZHkuHXwQvBqRE985dQk"
+    const val HC_VERMA_DRIVE_URL = "https://drive.google.com/drive/folders/1oj32-UtrZ7d9fbqLKfQiMUIcR78MLMJG"
+    const val IRODOV_DRIVE_URL = "https://drive.google.com/drive/folders/13dIBfy8JfFQbsSdDwrrNUgC-M3N_Dnmx"
+
+    // 📚 EJEE Books PDF – Google Drive Links (All in One)
+    const val IOC_OM_PANDEY_URL = "https://drive.google.com/file/d/17bxjAdU-19r89ltfi8QF3ZXzX1kgzUUA/view?usp=drivesdk"
+    const val OC_ROHIT_AGARWAL_URL = "https://drive.google.com/file/d/1E-o1T40i1Ye0jR2Bokw5evMOVZNi_p0W/view?usp=drivesdk"
+    const val PHYSICAL_CHEM_URL = "https://drive.google.com/file/d/12q2sssGl1BBKxrJAPnk49yUhSHCYlRZJ/view?usp=drivesdk"
+    const val MATHS_SACHIN_SIR_URL = "https://drive.google.com/file/d/1Cfz8smlM6J-9FHOFK7UKnMtphpmVJvEV/view?usp=drivesdk"
+    const val SKC_CLASS_11_BOOK_URL = "https://drive.google.com/file/d/1oUNCzu35kblPyq46b7tf0R58ivlYDbqC/view?usp=drivesdk"
+
+    // Allen Modules & Study Material
+    const val ALLEN_MODULES_URL = "https://drive.google.com/drive/folders/1SynXg8rH1-RKSSElHvKDlNCorX27CyB1"
+    const val ALLEN_MATERIAL_URL = "https://drive.google.com/drive/folders/1GO-X-fMuEH6grA86t7_jxUUfqC8NZL60"
+
+    // 📚 JEE Advanced Previous Year Question Papers (2010–2025)
+    const val JEE_ADV_PYQ_2010_2025_URL = "https://drive.google.com/drive/folders/10uT5xt16uO3DViOxIB5x3HpfLr1cCimy"
 }
 
 data class StudyMaterial(

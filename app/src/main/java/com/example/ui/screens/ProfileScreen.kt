@@ -584,6 +584,57 @@ fun ProfileScreen(
                     }
                 }
 
+                // ARCSTFUG Official Web App Portal Card inside Profile
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = IndigoPrimary.copy(alpha = 0.1f)),
+                    border = CardDefaults.outlinedCardBorder(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { uriHandler.openUri(ExternalStudyLinks.ARCSTFUG_WEB_PORTAL_URL) }
+                        .testTag("profile_arcstfug_web_card")
+                ) {
+                    Row(
+                        modifier = Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(42.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(IndigoPrimary),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Language,
+                                contentDescription = "ARCSTFUG Web App",
+                                tint = Color.White,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "ARCSTFUG Official Web App",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "https://arcstfug-app.netlify.app/",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        FilledTonalButton(
+                            onClick = { uriHandler.openUri(ExternalStudyLinks.ARCSTFUG_WEB_PORTAL_URL) },
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text("Open Web", fontSize = 12.sp)
+                        }
+                    }
+                }
+
                 // Physics Google Drive Quick Access Card inside Profile
                 Card(
                     shape = RoundedCornerShape(16.dp),
