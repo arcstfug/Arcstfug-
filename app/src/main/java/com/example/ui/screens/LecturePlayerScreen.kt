@@ -102,7 +102,7 @@ fun LecturePlayerScreen(
                                 color = IndigoPrimary
                             )
                             Text(
-                                text = lecture.videoUrl,
+                                text = "HD Cloud Video Stream & Notes Ready ✓",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1

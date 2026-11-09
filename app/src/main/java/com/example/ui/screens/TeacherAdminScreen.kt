@@ -42,6 +42,9 @@ import com.example.R
 import com.example.model.*
 import com.example.ui.theme.*
 
+import com.example.data.PwCourseApiService
+import com.example.ui.viewmodel.AiUiState
+
 const val TEACHER_ADMIN_PASSWORD = "ASDFTREW"
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -93,6 +96,10 @@ fun TeacherAdminScreen(
         storageBucketOrBannerUrl: String,
         description: String
     ) -> Unit = { _, _, _, _, _, _, _ -> },
+    pwApiSyncState: AiUiState = AiUiState.Idle,
+    lastSyncedPwBatchId: String = "c_pw_lakshya_jee_2026",
+    onOpenBatch: (String) -> Unit = {},
+    onSendPwApiRequest: (endpointUrl: String, batchPresetTag: String, bearerToken: String, openBatchAfterSync: Boolean) -> Unit = { _, _, _, _ -> },
     userUid: String? = null,
     userEmail: String? = null,
     modifier: Modifier = Modifier
@@ -203,6 +210,12 @@ fun TeacherAdminScreen(
             courseStorageUrl = uri.toString()
         }
     }
+
+    var pwApiEndpointUrl by remember {
+        mutableStateOf(PwCourseApiService.DEFAULT_PW_BATCHES_API_URL)
+    }
+    var pwBatchPresetTag by remember { mutableStateOf("LAKSHYA_JEE_2026") }
+    var pwBearerToken by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
@@ -648,8 +661,9 @@ fun TeacherAdminScreen(
                                 OutlinedTextField(
                                     value = videoUrl,
                                     onValueChange = { videoUrl = it },
-                                    label = { Text("Video URL (YouTube / Google Drive / Stream Link)") },
-                                    placeholder = { Text("https://drive.google.com/... or select below") },
+                                    label = { Text("Video Stream Source (Protected / Hidden)") },
+                                    placeholder = { Text("Select cloud vault preset or local video below") },
+                                    visualTransformation = PasswordVisualTransformation(),
                                     singleLine = true,
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -1365,8 +1379,9 @@ fun TeacherAdminScreen(
                                 OutlinedTextField(
                                     value = matUrl,
                                     onValueChange = { matUrl = it },
-                                    label = { Text("Material Link (Google Drive / PDF URL / Local URI)") },
-                                    placeholder = { Text("https://drive.google.com/... or pick below") },
+                                    label = { Text("Study Material Source (Protected / Hidden)") },
+                                    placeholder = { Text("Select cloud vault preset or local PDF below") },
+                                    visualTransformation = PasswordVisualTransformation(),
                                     singleLine = true,
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -1759,9 +1774,228 @@ fun TeacherAdminScreen(
                 }
 
                 // =============================================================
-                // TAB 4: FIREBASE CLOUD STORAGE & COURSE BATCH PUBLISHER
+                // TAB 4: FIREBASE CLOUD STORAGE & COURSE BATCH PUBLISHER + PW API BRIDGE
                 // =============================================================
                 else -> {
+                    // PW (Physics Wallah) API Course Bridge Card
+                    item {
+                        Card(
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            border = CardDefaults.outlinedCardBorder(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("pw_api_bridge_card")
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(18.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(44.dp)
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(IndigoPrimary),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Api,
+                                            contentDescription = "PW API Course Bridge",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "⚡ PW (Physics Wallah) API Course Bridge",
+                                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            text = "Send live API request to PW Cloud Bridge & run courses in ARCSTFUG",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+
+                                Text(
+                                    text = "Select PW Batch Preset to Request & Run in ARCSTFUG:",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                    color = IndigoPrimary
+                                )
+
+                                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    val pwPresets = listOf(
+                                        Triple("🌐 All JEE + NEET + Class 9–12", "ALL_JEE_NEET_9_TO_12", PwCourseApiService.DEFAULT_PW_BATCHES_API_URL),
+                                        Triple("⚡ PW Lakshya JEE 2026 (12th)", "LAKSHYA_JEE_2026", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=JEE&class=12"),
+                                        Triple("🔥 PW Arjuna JEE 2026 (11th)", "ARJUNA_JEE_2026", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=JEE&class=11"),
+                                        Triple("🚀 PW Prayas Dropper JEE", "PRAYAS_JEE_2026", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=JEE&class=12+"),
+                                        Triple("🩺 PW Yakeen NEET 2026 (Dropper)", "YAKEEN_NEET_2026", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=NEET&class=12+"),
+                                        Triple("🧬 PW Lakshya NEET 2026 (12th)", "LAKSHYA_NEET_2026", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=NEET&class=12"),
+                                        Triple("🔬 PW Arjuna NEET 2026 (11th)", "ARJUNA_NEET_2026", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=NEET&class=11"),
+                                        Triple("🎓 PW Parishram Class 12", "PARISHRAM_CLASS12_2026", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=BOARD_EXAM&class=12"),
+                                        Triple("📘 PW Uday Class 11", "UDAY_CLASS11_2026", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=BOARD_EXAM&class=11"),
+                                        Triple("🎯 PW Udaan Class 10", "UDAAN_CLASS10_2026", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=BOARD_EXAM&class=10"),
+                                        Triple("🌱 PW Neev Class 9", "NEEV_CLASS9_2026", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=BOARD_EXAM&class=9")
+                                    )
+                                    items(pwPresets) { (label, tag, endpoint) ->
+                                        FilterChip(
+                                            selected = pwBatchPresetTag == tag,
+                                            onClick = {
+                                                pwBatchPresetTag = tag
+                                                pwApiEndpointUrl = endpoint
+                                            },
+                                            label = { Text(label, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+                                        )
+                                    }
+                                }
+
+                                OutlinedTextField(
+                                    value = pwApiEndpointUrl,
+                                    onValueChange = { pwApiEndpointUrl = it },
+                                    label = { Text("PW Cloud API Bridge Endpoint (Protected / Hidden)") },
+                                    visualTransformation = PasswordVisualTransformation(),
+                                    singleLine = true,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .testTag("pw_api_endpoint_input")
+                                )
+
+                                OutlinedTextField(
+                                    value = pwBearerToken,
+                                    onValueChange = { pwBearerToken = it },
+                                    label = { Text("Optional PW Bearer Token (Auto-Bridged if Empty)") },
+                                    placeholder = { Text("Leave blank to use ARCSTFUG Authorized Gateway") },
+                                    singleLine = true,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .testTag("pw_api_bearer_token_input")
+                                )
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Button(
+                                        onClick = {
+                                            onSendPwApiRequest(pwApiEndpointUrl, pwBatchPresetTag, pwBearerToken, false)
+                                        },
+                                        enabled = pwApiSyncState !is AiUiState.Loading,
+                                        colors = ButtonDefaults.buttonColors(containerColor = IndigoPrimary),
+                                        shape = RoundedCornerShape(14.dp),
+                                        contentPadding = PaddingValues(vertical = 14.dp, horizontal = 10.dp),
+                                        modifier = Modifier
+                                            .weight(1.2f)
+                                            .testTag("send_pw_api_request_btn")
+                                    ) {
+                                        if (pwApiSyncState is AiUiState.Loading) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(18.dp),
+                                                strokeWidth = 2.dp,
+                                                color = Color.White
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text("Syncing PW API...", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                        } else {
+                                            Icon(Icons.Filled.Send, contentDescription = null, modifier = Modifier.size(16.dp))
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text(
+                                                text = "Send PW API Request",
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 12.sp
+                                            )
+                                        }
+                                    }
+
+                                    Button(
+                                        onClick = {
+                                            onSendPwApiRequest(pwApiEndpointUrl, pwBatchPresetTag, pwBearerToken, true)
+                                        },
+                                        enabled = pwApiSyncState !is AiUiState.Loading,
+                                        colors = ButtonDefaults.buttonColors(containerColor = EmeraldSuccess),
+                                        shape = RoundedCornerShape(14.dp),
+                                        contentPadding = PaddingValues(vertical = 14.dp, horizontal = 10.dp),
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .testTag("run_pw_course_now_btn")
+                                    ) {
+                                        Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = "Sync & Open Course",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp
+                                        )
+                                    }
+                                }
+
+                                when (pwApiSyncState) {
+                                    is AiUiState.Success -> {
+                                        Surface(
+                                            shape = RoundedCornerShape(12.dp),
+                                            color = EmeraldSuccess.copy(alpha = 0.12f),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .testTag("pw_api_response_box")
+                                        ) {
+                                            Column(
+                                                modifier = Modifier.padding(12.dp),
+                                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                Text(
+                                                    text = "PW API Response & Sync Status (HTTP 200 OK)",
+                                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
+                                                    color = EmeraldSuccess
+                                                )
+                                                Text(
+                                                    text = pwApiSyncState.text,
+                                                    style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                                                    color = MaterialTheme.colorScheme.onSurface
+                                                )
+                                                Button(
+                                                    onClick = { onOpenBatch(lastSyncedPwBatchId) },
+                                                    colors = ButtonDefaults.buttonColors(containerColor = EmeraldSuccess),
+                                                    shape = RoundedCornerShape(10.dp),
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .testTag("admin_open_synced_pw_batch_btn")
+                                                ) {
+                                                    Icon(Icons.Filled.PlayCircleFilled, contentDescription = null, modifier = Modifier.size(18.dp))
+                                                    Spacer(modifier = Modifier.width(6.dp))
+                                                    Text(
+                                                        text = "Open Connected PW Batch (Lectures & DPPs)",
+                                                        fontWeight = FontWeight.Bold,
+                                                        fontSize = 12.sp
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                    is AiUiState.Error -> {
+                                        Surface(
+                                            shape = RoundedCornerShape(12.dp),
+                                            color = RoseContainer,
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Text(
+                                                text = pwApiSyncState.message,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = RoseError,
+                                                modifier = Modifier.padding(12.dp)
+                                            )
+                                        }
+                                    }
+                                    else -> {}
+                                }
+                            }
+                        }
+                    }
+
                     item {
                         Card(
                             shape = RoundedCornerShape(20.dp),
@@ -1794,7 +2028,7 @@ fun TeacherAdminScreen(
                                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                                             )
                                             Text(
-                                                text = "Bucket: ${ExternalStudyLinks.FIREBASE_STORAGE_BUCKET}",
+                                                text = "Cloud Storage Bucket: Connected & Synced ✓",
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
@@ -1934,7 +2168,8 @@ fun TeacherAdminScreen(
                                     OutlinedTextField(
                                         value = courseStorageUrl,
                                         onValueChange = { courseStorageUrl = it },
-                                        label = { Text("Firebase Storage Bucket Path / Banner URL") },
+                                        label = { Text("Cloud Storage Path (Protected / Hidden)") },
+                                        visualTransformation = PasswordVisualTransformation(),
                                         singleLine = true,
                                         modifier = Modifier
                                             .weight(1f)

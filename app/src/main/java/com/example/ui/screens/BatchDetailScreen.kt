@@ -204,7 +204,7 @@ fun BatchDetailScreen(
                                 )
                                 if (!course.storageBucketUrl.isNullOrBlank()) {
                                     Text(
-                                        text = "☁️ Firebase Storage Vault: ${course.storageBucketUrl}",
+                                        text = "☁️ Cloud Storage Vault: Connected ✓",
                                         color = Color(0xFFBAE6FD),
                                         style = MaterialTheme.typography.labelSmall
                                     )

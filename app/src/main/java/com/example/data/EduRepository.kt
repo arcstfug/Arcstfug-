@@ -47,6 +47,9 @@ class EduRepository {
     private val _teacherUploads = MutableStateFlow<List<TeacherUploadItem>>(emptyList())
     val teacherUploads: StateFlow<List<TeacherUploadItem>> = _teacherUploads.asStateFlow()
 
+    private val _announcements = MutableStateFlow<List<AnnouncementNotice>>(createInitialAnnouncements())
+    val announcements: StateFlow<List<AnnouncementNotice>> = _announcements.asStateFlow()
+
     fun updateUserProfile(
         name: String,
         targetExam: String,
@@ -368,6 +371,7 @@ class EduRepository {
     fun removeTeacherUploadById(uploadId: String) {
         _teacherUploads.update { current -> current.filterNot { it.id == uploadId } }
         _studyMaterials.update { current -> current.filterNot { it.id == uploadId } }
+        _announcements.update { current -> current.filterNot { it.id == uploadId } }
         _courses.update { courseList ->
             courseList
                 .filterNot { it.id == uploadId }
@@ -385,6 +389,12 @@ class EduRepository {
                         }
                     )
                 }
+        }
+    }
+
+    fun addAnnouncement(notice: AnnouncementNotice) {
+        _announcements.update { existing ->
+            listOf(notice) + existing.filterNot { it.id == notice.id }
         }
     }
 
@@ -462,8 +472,12 @@ class EduRepository {
                         .map { it.trim() }
                         .filter { it.isNotEmpty() }
                         .ifEmpty { listOf("Infinity", "Pro") }
+                    val resolvedCourseId = doc.courseId.ifBlank { doc.id }
+                    val isPwCourse = doc.title.contains("PW", ignoreCase = true) ||
+                        doc.materialCategory.contains("PW", ignoreCase = true) ||
+                        resolvedCourseId.startsWith("c_pw_")
                     val customCourse = CourseBatch(
-                        id = doc.courseId.ifBlank { doc.id },
+                        id = resolvedCourseId,
                         title = doc.title,
                         category = doc.materialCategory.ifBlank { "HACKER" },
                         tag = doc.materialCategory.ifBlank { "HACKER" },
@@ -475,13 +489,17 @@ class EduRepository {
                         description = doc.description,
                         syllabusCoveragePercent = 100,
                         isEnrolled = true,
-                        bannerColorHex = 0xFF78350F,
-                        subjects = listOf(
-                            SubjectDetail(
-                                type = subjectEnum,
-                                chapters = emptyList()
+                        bannerColorHex = if (isPwCourse) 0xFF1E1B4B else 0xFF78350F,
+                        subjects = if (isPwCourse) {
+                            PwCourseApiService.createPwBridgeSubjects(resolvedCourseId)
+                        } else {
+                            listOf(
+                                SubjectDetail(
+                                    type = subjectEnum,
+                                    chapters = emptyList()
+                                )
                             )
-                        ),
+                        },
                         bannerDrawableRes = if (doc.title.contains("HACKING", ignoreCase = true)) {
                             R.drawable.hacking_course_2027_banner
                         } else null,
@@ -490,6 +508,19 @@ class EduRepository {
                         storageBucketUrl = doc.resourceUrl.ifBlank { ExternalStudyLinks.FIREBASE_STORAGE_BUCKET }
                     )
                     addCourseBatch(customCourse)
+                }
+                "NOTICE" -> {
+                    val notice = AnnouncementNotice(
+                        id = doc.id,
+                        title = doc.title,
+                        message = doc.description,
+                        categoryTag = doc.materialCategory.ifBlank { "OFFICIAL NOTICE" },
+                        authorName = doc.authorName.ifBlank { "ARCSTFUG Official Portal" },
+                        timestampLabel = "Live Notice",
+                        actionUrl = doc.resourceUrl.ifBlank { ExternalStudyLinks.ARCSTFUG_WEB_PORTAL_URL },
+                        isPinned = true
+                    )
+                    addAnnouncement(notice)
                 }
                 else -> {
                     val mat = StudyMaterial(
@@ -728,6 +759,10 @@ class EduRepository {
 
     private fun createInitialCourses(): List<CourseBatch> {
         return listOf(
+            PwCourseApiService.buildPwPresetCourseBatch(
+                presetKey = "LAKSHYA_JEE_2026",
+                apiEndpointUrl = PwCourseApiService.DEFAULT_PW_BATCHES_API_URL
+            ),
             CourseBatch(
                 id = "c_hacking_2027",
                 title = "HACKING COURSE 2027",
@@ -1357,12 +1392,12 @@ class EduRepository {
         return listOf(
             StudyMaterial(
                 id = "mat_arcstfug_web_portal",
-                title = "ARCSTFUG Official Web App (arcstfug-app.netlify.app)",
+                title = "ARCSTFUG Official Web App Portal",
                 subject = SubjectType.PHYSICS,
                 chapterTitle = "Complete Online Study Portal & Live Classes",
                 courseId = "c_arjuna_jee",
                 category = "Official Web Portal",
-                description = "Access the official ARCSTFUG Web Platform at https://arcstfug-app.netlify.app/ anytime from any browser.",
+                description = "Access the official ARCSTFUG Web Platform anytime with one tap.",
                 resourceUrl = ExternalStudyLinks.ARCSTFUG_WEB_PORTAL_URL,
                 authorName = "Abhishek Kumar & Anirudhh Mishra",
                 uploadedAtLabel = "Official Web App"
@@ -1522,6 +1557,41 @@ class EduRepository {
                 resourceUrl = ExternalStudyLinks.ALL_INDIA_TEST_SERIES_URL,
                 authorName = "ARCSTFUG Exam Cell",
                 uploadedAtLabel = "Live Portal"
+            )
+        )
+    }
+
+    private fun createInitialAnnouncements(): List<AnnouncementNotice> {
+        return listOf(
+            AnnouncementNotice(
+                id = "notice_arcstfug_web_ai_1",
+                title = "🌐 ARCSTFUG Official Portal & AI Mentor Live!",
+                message = "Welcome to ARCSTFUG Official Portal. Use our integrated ARCSTFUG AI Assistant below for instant JEE/NEET doubt solving, formula revision, and live exam notices.",
+                categoryTag = "ARCSTFUG AI & PORTAL",
+                authorName = "ARCSTFUG Official Portal",
+                timestampLabel = "Pinned • Official",
+                actionUrl = ExternalStudyLinks.ARCSTFUG_WEB_PORTAL_URL,
+                isPinned = true
+            ),
+            AnnouncementNotice(
+                id = "notice_pw_all_courses_2",
+                title = "⚡ PW All Courses (Class 9–12, JEE & NEET 2026) Activated",
+                message = "All 10 PW Batches — Lakshya JEE, Arjuna JEE, Prayas JEE, Yakeen NEET, Lakshya NEET, Arjuna NEET, Parishram Class 12, Uday Class 11, Udaan Class 10 & Neev Class 9 — are now bridged with Physics, Chemistry, Maths & Biology Lectures + DPPs.",
+                categoryTag = "PW BATCH NOTICE",
+                authorName = "ARCSTFUG Academic Cell",
+                timestampLabel = "Live Update",
+                actionUrl = ExternalStudyLinks.ARCSTFUG_WEB_PORTAL_URL,
+                isPinned = true
+            ),
+            AnnouncementNotice(
+                id = "notice_jee_neet_vault_3",
+                title = "📚 New Study Vault Drop: DC Pandey, HC Verma, Irodov, EJEE & Allen Modules",
+                message = "Direct Google Drive folders for Physics Vault Drop #01, Om Pandey Sir IOC, Rohit Agarwal Sir OC, Sachin Sir Maths, Allen Modules & JEE Advanced PYQs (2010–2025) are available on the Home Screen.",
+                categoryTag = "STUDY VAULT",
+                authorName = "Abhishek Kumar • Academic Vault",
+                timestampLabel = "Today",
+                actionUrl = ExternalStudyLinks.JEE_ADV_PYQ_2010_2025_URL,
+                isPinned = false
             )
         )
     }

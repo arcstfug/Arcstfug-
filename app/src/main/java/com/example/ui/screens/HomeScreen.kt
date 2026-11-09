@@ -13,7 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,8 +27,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
+import com.example.data.PwCourseApiService
 import com.example.model.*
 import com.example.ui.theme.*
+import com.example.ui.viewmodel.AiUiState
 import com.example.ui.viewmodel.MainNavTab
 
 @Composable
@@ -43,9 +45,22 @@ fun HomeScreen(
     onStartDpp: (String) -> Unit,
     studyMaterials: List<StudyMaterial> = emptyList(),
     onOpenTeacherAdmin: () -> Unit = { onNavigateTab(MainNavTab.TEACHER_ADMIN) },
+    pwApiSyncState: AiUiState = AiUiState.Idle,
+    lastSyncedPwBatchId: String = "c_pw_lakshya_jee_2026",
+    onSendPwApiRequest: (String, String, Boolean) -> Unit = { _, _, _ -> },
+    announcements: List<AnnouncementNotice> = emptyList(),
+    arcstfugPortalAiState: AiUiState = AiUiState.Idle,
+    onAskArcstfugPortalAi: (String, Boolean) -> Unit = { _, _ -> },
+    onPostCustomAnnouncement: (String, String, String, String) -> Unit = { _, _, _, _ -> },
     modifier: Modifier = Modifier
 ) {
     val uriHandler = LocalUriHandler.current
+    var showNewNoticeForm by remember { mutableStateOf(false) }
+    var noticeTitleInput by remember { mutableStateOf("") }
+    var noticeCategoryInput by remember { mutableStateOf("OFFICIAL NOTICE") }
+    var noticeMessageInput by remember { mutableStateOf("") }
+    var arcstfugAiQueryInput by remember { mutableStateOf("") }
+
     val activeLecture = allLectures.firstOrNull { it.progressSec > 0 && !it.isCompleted }
         ?: allLectures.firstOrNull()
 
@@ -148,6 +163,462 @@ fun HomeScreen(
                                 style = MaterialTheme.typography.bodySmall.copy(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                        }
+                    }
+                }
+            }
+        }
+
+        // =====================================================================
+        // 📢 OFFICIAL ANNOUNCEMENTS, NOTICE BOARD & arcstfug-app.netlify.app AI
+        // =====================================================================
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                // 1. Official Announcements & Notice Board Card
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = CardDefaults.outlinedCardBorder(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("home_announcements_notice_card")
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(42.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(AmberStreak.copy(alpha = 0.18f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Campaign,
+                                        contentDescription = "Official Announcements & Notice Board",
+                                        tint = AmberStreak,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                                Column {
+                                    Text(
+                                        text = "📢 Announcements & Notice Board",
+                                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold),
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = "Live Updates • JEE, NEET & Class 9–12 Official Portal",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+
+                            FilledTonalButton(
+                                onClick = { showNewNoticeForm = !showNewNoticeForm },
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                                modifier = Modifier.testTag("toggle_new_notice_form_btn")
+                            ) {
+                                Icon(
+                                    imageVector = if (showNewNoticeForm) Icons.Filled.Close else Icons.Filled.AddAlert,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = if (showNewNoticeForm) "Close" else "+ Notice",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        if (showNewNoticeForm) {
+                            Surface(
+                                shape = RoundedCornerShape(14.dp),
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.28f),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("new_notice_composer_box")
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(
+                                        text = "Publish New Official Announcement / Notice",
+                                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = IndigoPrimary
+                                    )
+                                    LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        val tags = listOf("OFFICIAL NOTICE", "URGENT ALERT", "PW BATCH UPDATE", "EXAM SCHEDULE", "ARCSTFUG AI")
+                                        items(tags) { tagItem ->
+                                            FilterChip(
+                                                selected = noticeCategoryInput == tagItem,
+                                                onClick = { noticeCategoryInput = tagItem },
+                                                label = { Text(tagItem, fontSize = 10.sp, fontWeight = FontWeight.Bold) }
+                                            )
+                                        }
+                                    }
+                                    OutlinedTextField(
+                                        value = noticeTitleInput,
+                                        onValueChange = { noticeTitleInput = it },
+                                        label = { Text("Announcement / Notice Title") },
+                                        placeholder = { Text("e.g. 🚨 All-India JEE & NEET Mock Test Live Today at 6 PM") },
+                                        singleLine = true,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .testTag("notice_title_input")
+                                    )
+                                    OutlinedTextField(
+                                        value = noticeMessageInput,
+                                        onValueChange = { noticeMessageInput = it },
+                                        label = { Text("Notice Details / Message") },
+                                        placeholder = { Text("Enter important instructions, schedule, or link details for students...") },
+                                        minLines = 2,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .testTag("notice_message_input")
+                                    )
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Button(
+                                            onClick = {
+                                                onPostCustomAnnouncement(
+                                                    noticeTitleInput.ifBlank { "📢 Official ARCSTFUG Notice" },
+                                                    noticeMessageInput.ifBlank {
+                                                        "Important update posted on ARCSTFUG Official Portal. Check your batch schedule and daily DPPs."
+                                                    },
+                                                    noticeCategoryInput,
+                                                    ExternalStudyLinks.ARCSTFUG_WEB_PORTAL_URL
+                                                )
+                                                noticeTitleInput = ""
+                                                noticeMessageInput = ""
+                                                showNewNoticeForm = false
+                                            },
+                                            colors = ButtonDefaults.buttonColors(containerColor = IndigoPrimary),
+                                            shape = RoundedCornerShape(10.dp),
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .testTag("publish_notice_submit_btn")
+                                        ) {
+                                            Icon(Icons.Filled.Campaign, contentDescription = null, modifier = Modifier.size(16.dp))
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text("Publish Notice", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        announcements.take(4).forEach { notice ->
+                            Surface(
+                                shape = RoundedCornerShape(14.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        if (notice.actionUrl.startsWith("http")) {
+                                            uriHandler.openUri(notice.actionUrl)
+                                        }
+                                    }
+                                    .testTag("notice_item_${notice.id}")
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Surface(
+                                            shape = RoundedCornerShape(6.dp),
+                                            color = IndigoPrimary.copy(alpha = 0.14f)
+                                        ) {
+                                            Text(
+                                                text = notice.categoryTag,
+                                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
+                                                color = IndigoPrimary,
+                                                fontSize = 10.sp,
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                            )
+                                        }
+                                        Text(
+                                            text = notice.timestampLabel,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            fontSize = 10.sp
+                                        )
+                                    }
+                                    Text(
+                                        text = notice.title,
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = notice.message,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "By ${notice.authorName}",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.primary,
+                                            fontSize = 10.sp
+                                        )
+                                        Text(
+                                            text = "View Details ↗",
+                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                            color = IndigoPrimary,
+                                            fontSize = 11.sp
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 2. 🤖 arcstfug-app.netlify.app Official AI Assistant & Smart Notice Generator Card
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = CardDefaults.outlinedCardBorder(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("home_arcstfug_netlify_ai_card")
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                Brush.horizontalGradient(
+                                    listOf(
+                                        IndigoPrimary.copy(alpha = 0.12f),
+                                        CyanContainer.copy(alpha = 0.30f)
+                                    )
+                                )
+                            )
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(IndigoPrimary),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.AutoAwesome,
+                                        contentDescription = "ARCSTFUG AI Assistant",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                                Column {
+                                    Text(
+                                        text = "🤖 ARCSTFUG Official AI Assistant",
+                                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold),
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = "AI Doubt Mentor, Formula Guide & Smart Notice Generator",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+
+                            FilledTonalButton(
+                                onClick = { uriHandler.openUri(ExternalStudyLinks.ARCSTFUG_WEB_PORTAL_URL) },
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                                modifier = Modifier.testTag("arcstfug_ai_open_portal_btn")
+                            ) {
+                                Icon(Icons.Filled.Language, contentDescription = null, modifier = Modifier.size(14.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Web Portal ↗", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        val aiQuickPrompts = listOf(
+                            "📢 Generate Today's Official JEE & NEET Batch Notice",
+                            "⚡ PW All Batches (9–12, JEE, NEET) Study Strategy",
+                            "📘 High-Yield Physics & Chemistry Formula Revision",
+                            "🌐 Complete ARCSTFUG Study Vault Guide"
+                        )
+
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            items(aiQuickPrompts) { quickPrompt ->
+                                OutlinedButton(
+                                    onClick = {
+                                        arcstfugAiQueryInput = quickPrompt
+                                        onAskArcstfugPortalAi(quickPrompt, false)
+                                    },
+                                    shape = RoundedCornerShape(10.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp)
+                                ) {
+                                    Text(quickPrompt, fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                                }
+                            }
+                        }
+
+                        OutlinedTextField(
+                            value = arcstfugAiQueryInput,
+                            onValueChange = { arcstfugAiQueryInput = it },
+                            label = { Text("Ask ARCSTFUG AI or Enter Notice Topic") },
+                            placeholder = { Text("e.g. Write an exam notice for Lakshya JEE & Yakeen NEET or explain Gauss Law...") },
+                            singleLine = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("arcstfug_ai_query_input")
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Button(
+                                onClick = {
+                                    onAskArcstfugPortalAi(arcstfugAiQueryInput, false)
+                                },
+                                enabled = arcstfugPortalAiState !is AiUiState.Loading && arcstfugPortalAiState !is AiUiState.Streaming,
+                                colors = ButtonDefaults.buttonColors(containerColor = IndigoPrimary),
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .testTag("ask_arcstfug_ai_btn")
+                            ) {
+                                Icon(Icons.Filled.AutoAwesome, contentDescription = null, modifier = Modifier.size(15.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Ask ARCSTFUG AI", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+
+                            Button(
+                                onClick = {
+                                    onAskArcstfugPortalAi(
+                                        arcstfugAiQueryInput.ifBlank {
+                                            "Generate an official announcement notice for JEE, NEET & Class 9–12 students"
+                                        },
+                                        true
+                                    )
+                                },
+                                enabled = arcstfugPortalAiState !is AiUiState.Loading && arcstfugPortalAiState !is AiUiState.Streaming,
+                                colors = ButtonDefaults.buttonColors(containerColor = EmeraldSuccess),
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier
+                                    .weight(1.1f)
+                                    .testTag("ai_post_notice_btn")
+                            ) {
+                                Icon(Icons.Filled.Campaign, contentDescription = null, modifier = Modifier.size(15.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("AI Post as Notice", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+
+                        when (arcstfugPortalAiState) {
+                            is AiUiState.Loading -> {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    modifier = Modifier.padding(vertical = 4.dp)
+                                ) {
+                                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                                    Text(
+                                        text = "ARCSTFUG AI is thinking...",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = IndigoPrimary
+                                    )
+                                }
+                            }
+                            is AiUiState.Streaming -> {
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = arcstfugPortalAiState.text,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.padding(12.dp)
+                                    )
+                                }
+                            }
+                            is AiUiState.Success -> {
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = EmeraldSuccess.copy(alpha = 0.12f),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .testTag("arcstfug_ai_response_box")
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(12.dp),
+                                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text(
+                                            text = "✨ ARCSTFUG Official AI Response",
+                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
+                                            color = EmeraldSuccess
+                                        )
+                                        Text(
+                                            text = arcstfugPortalAiState.text,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                }
+                            }
+                            is AiUiState.Error -> {
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = RoseContainer,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = arcstfugPortalAiState.message,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = RoseError,
+                                        modifier = Modifier.padding(12.dp)
+                                    )
+                                }
+                            }
+                            else -> {}
                         }
                     }
                 }
@@ -279,6 +750,254 @@ fun HomeScreen(
                                 modifier = Modifier.size(14.dp),
                                 tint = Color.White
                             )
+                        }
+                    }
+                }
+
+                // ⚡ PW (Physics Wallah) API Course Bridge Card on Home Screen
+                Card(
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = CardDefaults.outlinedCardBorder(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("home_pw_api_bridge_card")
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color(0xFF1E1B4B)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Api,
+                                    contentDescription = "PW API Bridge",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Text(
+                                        text = "⚡ PW All Courses API Bridge",
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = EmeraldSuccess.copy(alpha = 0.16f)
+                                    ) {
+                                        Text(
+                                            text = "🟢 CONNECTED",
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = EmeraldSuccess,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+                                Text(
+                                    text = "JEE (Lakshya, Arjuna, Prayas) • NEET (Yakeen, Lakshya, Arjuna) • Class 9–12",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        val homePwPresets = listOf(
+                            Triple("🌐 All JEE + NEET + 9–12", "ALL_JEE_NEET_9_TO_12", PwCourseApiService.DEFAULT_PW_BATCHES_API_URL),
+                            Triple("⚡ Lakshya JEE (12th)", "LAKSHYA_JEE_2026", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=JEE&class=12"),
+                            Triple("🔥 Arjuna JEE (11th)", "ARJUNA_JEE_2026", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=JEE&class=11"),
+                            Triple("🚀 Prayas JEE (Dropper)", "PRAYAS_JEE_2026", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=JEE&class=12+"),
+                            Triple("🩺 Yakeen NEET (Dropper)", "YAKEEN_NEET_2026", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=NEET&class=12+"),
+                            Triple("🧬 Lakshya NEET (12th)", "LAKSHYA_NEET_2026", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=NEET&class=12"),
+                            Triple("🔬 Arjuna NEET (11th)", "ARJUNA_NEET_2026", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=NEET&class=11"),
+                            Triple("🎓 Parishram Class 12", "PARISHRAM_CLASS12_2026", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=BOARD_EXAM&class=12"),
+                            Triple("📘 Uday Class 11", "UDAY_CLASS11_2026", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=BOARD_EXAM&class=11"),
+                            Triple("🎯 Udaan Class 10", "UDAAN_CLASS10_2026", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=BOARD_EXAM&class=10"),
+                            Triple("🌱 Neev Class 9", "NEEV_CLASS9_2026", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=BOARD_EXAM&class=9")
+                        )
+
+                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            items(homePwPresets) { (label, tag, endpoint) ->
+                                OutlinedButton(
+                                    onClick = {
+                                        onSendPwApiRequest(endpoint, tag, false)
+                                    },
+                                    shape = RoundedCornerShape(10.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                                    modifier = Modifier.testTag("home_pw_api_${tag.lowercase()}_btn")
+                                ) {
+                                    Text(label, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Button(
+                                onClick = {
+                                    onSendPwApiRequest(
+                                        PwCourseApiService.DEFAULT_PW_BATCHES_API_URL,
+                                        "ALL_JEE_NEET_9_TO_12",
+                                        false
+                                    )
+                                },
+                                enabled = pwApiSyncState !is AiUiState.Loading,
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E1B4B)),
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier
+                                    .weight(1.35f)
+                                    .testTag("home_send_pw_api_request_btn")
+                            ) {
+                                if (pwApiSyncState is AiUiState.Loading) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(16.dp),
+                                        strokeWidth = 2.dp,
+                                        color = Color.White
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Syncing All PW Courses...", fontSize = 11.sp, color = Color.White)
+                                } else {
+                                    Icon(
+                                        imageVector = Icons.Filled.Send,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(14.dp),
+                                        tint = Color.White
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "Send PW All Courses API Request",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                }
+                            }
+
+                            Button(
+                                onClick = {
+                                    val existing = courses.find { it.id == lastSyncedPwBatchId }
+                                    if (existing != null) {
+                                        onOpenBatch(existing.id)
+                                    } else {
+                                        onSendPwApiRequest(
+                                            PwCourseApiService.DEFAULT_PW_BATCHES_API_URL,
+                                            "ALL_JEE_NEET_9_TO_12",
+                                            true
+                                        )
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = EmeraldSuccess),
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier
+                                    .weight(0.9f)
+                                    .testTag("home_open_pw_course_btn")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.PlayArrow,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(15.dp),
+                                    tint = Color.White
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Run Course",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+                        }
+
+                        if (pwApiSyncState is AiUiState.Success) {
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = EmeraldSuccess.copy(alpha = 0.12f),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(10.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(
+                                        text = pwApiSyncState.text,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+
+                                    val pwSyncedBatches = courses.filter { it.id.startsWith("c_pw_") || it.id.startsWith("pw_") }
+                                    if (pwSyncedBatches.isNotEmpty()) {
+                                        Text(
+                                            text = "Tap any Connected PW Course below to Open Lectures & DPPs:",
+                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
+                                            color = EmeraldSuccess
+                                        )
+                                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            items(pwSyncedBatches) { pwBatch ->
+                                                FilledTonalButton(
+                                                    onClick = { onOpenBatch(pwBatch.id) },
+                                                    shape = RoundedCornerShape(8.dp),
+                                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                                    modifier = Modifier.testTag("open_synced_${pwBatch.id}")
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Filled.PlayCircleFilled,
+                                                        contentDescription = null,
+                                                        modifier = Modifier.size(14.dp)
+                                                    )
+                                                    Spacer(modifier = Modifier.width(4.dp))
+                                                    Text(
+                                                        text = pwBatch.title.replace(" (API Connected)", "").replace(" API)", ")"),
+                                                        fontSize = 11.sp,
+                                                        fontWeight = FontWeight.Bold
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    Button(
+                                        onClick = { onOpenBatch(lastSyncedPwBatchId) },
+                                        colors = ButtonDefaults.buttonColors(containerColor = EmeraldSuccess),
+                                        shape = RoundedCornerShape(8.dp),
+                                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .testTag("home_open_synced_pw_batch_btn")
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.PlayCircleFilled,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(16.dp),
+                                            tint = Color.White
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = "Open Primary PW Batch (Watch Lectures & Solve DPPs)",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -419,7 +1138,7 @@ fun HomeScreen(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "https://arcstfug-app.netlify.app/ • Live Study Web Portal",
+                                text = "Official Cloud Study Platform • Live Classes & Notes",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -542,7 +1261,7 @@ fun HomeScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = "📚 EJEE Books PDF – Google Drive Links (All in One)",
+                            text = "📚 EJEE Books PDF Vault (All in One)",
                             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -772,7 +1491,7 @@ fun HomeScreen(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "Live JEE / NEET CBT Exam Portal • deltastudy.fun",
+                                text = "Live JEE / NEET CBT Exam Portal • All-India Rank",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

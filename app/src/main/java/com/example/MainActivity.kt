@@ -148,11 +148,15 @@ fun MainAppContent(
     val doubts by viewModel.doubts.collectAsStateWithLifecycle()
     val studyMaterials by viewModel.studyMaterials.collectAsStateWithLifecycle()
     val teacherUploads by viewModel.teacherUploads.collectAsStateWithLifecycle()
+    val announcements by viewModel.announcements.collectAsStateWithLifecycle()
 
     val doubtAiState by viewModel.doubtAiState.collectAsStateWithLifecycle()
     val lectureAiSummaryState by viewModel.lectureAiSummaryState.collectAsStateWithLifecycle()
     val dppAiState by viewModel.dppAiState.collectAsStateWithLifecycle()
     val studyPlannerAiState by viewModel.studyPlannerAiState.collectAsStateWithLifecycle()
+    val pwApiSyncState by viewModel.pwApiSyncState.collectAsStateWithLifecycle()
+    val lastSyncedPwBatchId by viewModel.lastSyncedPwBatchId.collectAsStateWithLifecycle()
+    val arcstfugPortalAiState by viewModel.arcstfugPortalAiState.collectAsStateWithLifecycle()
 
     val activeBatchId by viewModel.activeBatchId.collectAsStateWithLifecycle()
     val activeLectureId by viewModel.activeLectureId.collectAsStateWithLifecycle()
@@ -312,6 +316,15 @@ fun MainAppContent(
                     onUploadCourse = { title, tag, plans, instr, price, storageUrl, desc ->
                         viewModel.uploadTeacherCourse(title, tag, plans, instr, price, storageUrl, desc)
                     },
+                    pwApiSyncState = pwApiSyncState,
+                    lastSyncedPwBatchId = lastSyncedPwBatchId,
+                    onOpenBatch = {
+                        viewModel.closeTeacherAdmin()
+                        viewModel.openBatch(it)
+                    },
+                    onSendPwApiRequest = { endpoint, tag, token, openAfter ->
+                        viewModel.sendPwCourseApiRequest(endpoint, tag, token, openAfter)
+                    },
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(adminPadding)
@@ -356,6 +369,23 @@ fun MainAppContent(
                             onStartDpp = { viewModel.startDpp(it) },
                             studyMaterials = studyMaterials,
                             onOpenTeacherAdmin = { viewModel.openTeacherAdmin() },
+                            pwApiSyncState = pwApiSyncState,
+                            lastSyncedPwBatchId = lastSyncedPwBatchId,
+                            onSendPwApiRequest = { endpoint, tag, openAfter ->
+                                viewModel.sendPwCourseApiRequest(
+                                    endpointUrl = endpoint,
+                                    batchPresetTag = tag,
+                                    openBatchAfterSync = openAfter
+                                )
+                            },
+                            announcements = announcements,
+                            arcstfugPortalAiState = arcstfugPortalAiState,
+                            onAskArcstfugPortalAi = { query, postAsNotice ->
+                                viewModel.askArcstfugPortalAi(query, postAsNotice)
+                            },
+                            onPostCustomAnnouncement = { title, msg, cat, url ->
+                                viewModel.postCustomAnnouncement(title, msg, cat, url)
+                            },
                             modifier = Modifier.fillMaxSize()
                         )
                     }
@@ -443,6 +473,15 @@ fun MainAppContent(
                             onBack = { navigateToTab(MainNavTab.HOME) },
                             onUploadCourse = { title, tag, plans, instr, price, storageUrl, desc ->
                                 viewModel.uploadTeacherCourse(title, tag, plans, instr, price, storageUrl, desc)
+                            },
+                            pwApiSyncState = pwApiSyncState,
+                            lastSyncedPwBatchId = lastSyncedPwBatchId,
+                            onOpenBatch = {
+                                viewModel.closeTeacherAdmin()
+                                viewModel.openBatch(it)
+                            },
+                            onSendPwApiRequest = { endpoint, tag, token, openAfter ->
+                                viewModel.sendPwCourseApiRequest(endpoint, tag, token, openAfter)
                             },
                             modifier = Modifier.fillMaxSize()
                         )

@@ -561,7 +561,7 @@ fun ProfileScreen(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "Official Portal: deltastudy.fun/missionjeet/251",
+                            text = "Official CBT Portal • Live All-India Rank & Percentile",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -620,7 +620,7 @@ fun ProfileScreen(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "https://arcstfug-app.netlify.app/",
+                                text = "Official Live Classes, Notes & Study Platform",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -1032,7 +1032,7 @@ fun ProfileScreen(
                     Text("• Total Duration: ${exam.durationMinutes} minutes")
                     Text("• Total Marks: ${exam.totalMarks}")
                     Text("• Status: ${exam.status} (${exam.scheduledDate})")
-                    Text("• Portal: $targetUrl", color = IndigoPrimary, style = MaterialTheme.typography.labelSmall)
+                    Text("• Portal: Official CBT Exam Room Ready ✓", color = IndigoPrimary, style = MaterialTheme.typography.labelSmall)
                     Text("Rules: +4 for correct answer, -1 for wrong response. Calculators not permitted.")
                 }
             },

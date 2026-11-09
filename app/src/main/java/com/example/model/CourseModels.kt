@@ -211,3 +211,15 @@ data class DoubtQuery(
     val timestamp: String
 )
 
+data class AnnouncementNotice(
+    val id: String,
+    val title: String,
+    val message: String,
+    val categoryTag: String = "OFFICIAL NOTICE",
+    val authorName: String = "ARCSTFUG Official Portal",
+    val timestampLabel: String = "Just now",
+    val actionUrl: String = ExternalStudyLinks.ARCSTFUG_WEB_PORTAL_URL,
+    val isPinned: Boolean = true
+)
+
+

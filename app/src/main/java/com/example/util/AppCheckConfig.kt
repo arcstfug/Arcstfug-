@@ -12,7 +12,6 @@ import com.google.firebase.appcheck.recaptcha.RecaptchaAppCheckProviderFactory
 private const val TAG = "AppCheckInit"
 
 private const val DEBUG_TOKEN_EXTRA = "FIREBASE_APPCHECK_DEBUG_TOKEN"
-private const val DEFAULT_DEBUG_TOKEN = "0627cd55-5585-47a7-9570-fd097d85ecda"
 private const val DEBUG_STORE_PREFIX = "com.google.firebase.appcheck.debug.store."
 private const val DEBUG_SECRET_KEY = "com.google.firebase.appcheck.debug.DEBUG_SECRET"
 private const val RECAPTCHA_SITE_KEY_RES = "recaptcha_site_key"
@@ -25,12 +24,10 @@ fun configureAppCheck(context: Context, intent: Intent?) {
         }
 
         if (BuildConfig.DEBUG) {
-            // 2. Debug: Read debug token from Intent extra or fallback to registered debug token
+            // 2. Debug: Read debug token from Intent extra
             val debugToken = intent?.getStringExtra(DEBUG_TOKEN_EXTRA)
-                ?.takeIf { it.isNotBlank() }
-                ?: DEFAULT_DEBUG_TOKEN
 
-            if (debugToken.isNotEmpty()) {
+            if (!debugToken.isNullOrEmpty()) {
                 val persistenceKey = FirebaseApp.getInstance().persistenceKey
                 val prefs = context.getSharedPreferences(
                     "$DEBUG_STORE_PREFIX$persistenceKey",
