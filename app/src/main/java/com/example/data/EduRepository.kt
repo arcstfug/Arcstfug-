@@ -475,38 +475,45 @@ class EduRepository {
                     val resolvedCourseId = doc.courseId.ifBlank { doc.id }
                     val isPwCourse = doc.title.contains("PW", ignoreCase = true) ||
                         doc.materialCategory.contains("PW", ignoreCase = true) ||
-                        resolvedCourseId.startsWith("c_pw_")
-                    val customCourse = CourseBatch(
-                        id = resolvedCourseId,
-                        title = doc.title,
-                        category = doc.materialCategory.ifBlank { "HACKER" },
-                        tag = doc.materialCategory.ifBlank { "HACKER" },
-                        rating = 5.0f,
-                        enrolledCount = "Live Batch",
-                        price = if (doc.durationMinutes > 0) "₹${doc.durationMinutes}" else "₹2,999",
-                        originalPrice = "₹9,999",
-                        instructorTeam = doc.authorName.ifBlank { "ARCSTFUG Lead Instructor" },
-                        description = doc.description,
-                        syllabusCoveragePercent = 100,
-                        isEnrolled = true,
-                        bannerColorHex = if (isPwCourse) 0xFF1E1B4B else 0xFF78350F,
-                        subjects = if (isPwCourse) {
-                            PwCourseApiService.createPwBridgeSubjects(resolvedCourseId)
-                        } else {
-                            listOf(
+                        resolvedCourseId.startsWith("c_pw_") ||
+                        resolvedCourseId.startsWith("pw_")
+                    val customCourse = if (isPwCourse) {
+                        PwCourseApiService.buildPwPresetCourseBatch(
+                            presetKey = "${doc.title} $resolvedCourseId",
+                            apiEndpointUrl = doc.resourceUrl.ifBlank { PwCourseApiService.DEFAULT_PW_BATCHES_API_URL },
+                            httpStatus = 200,
+                            overrideId = resolvedCourseId,
+                            overrideTitle = doc.title.takeIf { it.isNotBlank() }
+                        )
+                    } else {
+                        CourseBatch(
+                            id = resolvedCourseId,
+                            title = doc.title,
+                            category = doc.materialCategory.ifBlank { "HACKER" },
+                            tag = doc.materialCategory.ifBlank { "HACKER" },
+                            rating = 5.0f,
+                            enrolledCount = "Live Batch",
+                            price = if (doc.durationMinutes > 0) "₹${doc.durationMinutes}" else "₹2,999",
+                            originalPrice = "₹9,999",
+                            instructorTeam = doc.authorName.ifBlank { "ARCSTFUG Lead Instructor" },
+                            description = doc.description,
+                            syllabusCoveragePercent = 100,
+                            isEnrolled = true,
+                            bannerColorHex = 0xFF78350F,
+                            subjects = listOf(
                                 SubjectDetail(
                                     type = subjectEnum,
                                     chapters = emptyList()
                                 )
-                            )
-                        },
-                        bannerDrawableRes = if (doc.title.contains("HACKING", ignoreCase = true)) {
-                            R.drawable.hacking_course_2027_banner
-                        } else null,
-                        availablePlans = plans,
-                        featureBadge = doc.materialCategory.ifBlank { "HACKER" },
-                        storageBucketUrl = doc.resourceUrl.ifBlank { ExternalStudyLinks.FIREBASE_STORAGE_BUCKET }
-                    )
+                            ),
+                            bannerDrawableRes = if (doc.title.contains("HACKING", ignoreCase = true)) {
+                                R.drawable.hacking_course_2027_banner
+                            } else null,
+                            availablePlans = plans,
+                            featureBadge = doc.materialCategory.ifBlank { "HACKER" },
+                            storageBucketUrl = doc.resourceUrl.ifBlank { ExternalStudyLinks.FIREBASE_STORAGE_BUCKET }
+                        )
+                    }
                     addCourseBatch(customCourse)
                 }
                 "NOTICE" -> {
@@ -758,11 +765,7 @@ class EduRepository {
     }
 
     private fun createInitialCourses(): List<CourseBatch> {
-        return listOf(
-            PwCourseApiService.buildPwPresetCourseBatch(
-                presetKey = "LAKSHYA_JEE_2026",
-                apiEndpointUrl = PwCourseApiService.DEFAULT_PW_BATCHES_API_URL
-            ),
+        return PwCourseApiService.buildAllPwPresetBatches() + listOf(
             CourseBatch(
                 id = "c_hacking_2027",
                 title = "HACKING COURSE 2027",

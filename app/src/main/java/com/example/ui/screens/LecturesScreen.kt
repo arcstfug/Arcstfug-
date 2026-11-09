@@ -35,12 +35,13 @@ fun LecturesScreen(
     val uriHandler = LocalUriHandler.current
     var searchQuery by remember { mutableStateOf("") }
     var selectedSubject by remember { mutableStateOf<SubjectType?>(null) }
-    var filterTab by remember { mutableStateOf("All") } // "All", "In Progress", "Completed", "Saved"
+    var filterTab by remember { mutableStateOf("All") } // "All", "PW Lectures", "In Progress", "Completed", "Saved"
 
     val filteredLectures = lectures.filter { lec ->
         val matchesSubject = selectedSubject == null || lec.subject == selectedSubject
         val matchesStatus = when (filterTab) {
             "All" -> true
+            "PW Lectures" -> lec.id.startsWith("lec_pw_") || lec.courseId.startsWith("c_pw_") || lec.courseId.startsWith("pw_")
             "In Progress" -> lec.progressSec > 0 && !lec.isCompleted
             "Completed" -> lec.isCompleted
             "Saved" -> lec.isBookmarked
@@ -178,13 +179,15 @@ fun LecturesScreen(
 
         // Status Tabs Row
         item {
-            TabRow(
-                selectedTabIndex = listOf("All", "In Progress", "Completed", "Saved").indexOf(filterTab),
+            val statusTabs = listOf("All", "PW Lectures", "In Progress", "Completed", "Saved")
+            ScrollableTabRow(
+                selectedTabIndex = statusTabs.indexOf(filterTab).coerceAtLeast(0),
                 containerColor = MaterialTheme.colorScheme.surface,
                 contentColor = IndigoPrimary,
+                edgePadding = 0.dp,
                 modifier = Modifier.clip(RoundedCornerShape(12.dp))
             ) {
-                listOf("All", "In Progress", "Completed", "Saved").forEach { tab ->
+                statusTabs.forEach { tab ->
                     Tab(
                         selected = filterTab == tab,
                         onClick = { filterTab = tab },

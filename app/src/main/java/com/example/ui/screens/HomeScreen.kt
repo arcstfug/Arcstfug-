@@ -945,7 +945,7 @@ fun HomeScreen(
                                     val pwSyncedBatches = courses.filter { it.id.startsWith("c_pw_") || it.id.startsWith("pw_") }
                                     if (pwSyncedBatches.isNotEmpty()) {
                                         Text(
-                                            text = "Tap any Connected PW Course below to Open Lectures & DPPs:",
+                                            text = "Tap any Connected PW Course below to Open Full Syllabus:",
                                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
                                             color = EmeraldSuccess
                                         )
@@ -968,6 +968,76 @@ fun HomeScreen(
                                                         fontSize = 11.sp,
                                                         fontWeight = FontWeight.Bold
                                                     )
+                                                }
+                                            }
+                                        }
+                                    }
+
+                                    val pwLectures = allLectures.filter {
+                                        it.id.startsWith("lec_pw_") ||
+                                            it.courseId.startsWith("c_pw_") ||
+                                            it.courseId.startsWith("pw_")
+                                    }
+                                    if (pwLectures.isNotEmpty()) {
+                                        Text(
+                                            text = "🎬 PW Live & Recorded Video Lectures (${pwLectures.size} Lectures • Tap to Watch):",
+                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
+                                            color = IndigoPrimary
+                                        )
+                                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            items(pwLectures.take(16)) { pwLec ->
+                                                Card(
+                                                    shape = RoundedCornerShape(10.dp),
+                                                    colors = CardDefaults.cardColors(
+                                                        containerColor = MaterialTheme.colorScheme.surface
+                                                    ),
+                                                    border = CardDefaults.outlinedCardBorder(),
+                                                    modifier = Modifier
+                                                        .width(235.dp)
+                                                        .clickable { onOpenLecture(pwLec.id) }
+                                                        .testTag("home_pw_lecture_card_${pwLec.id}")
+                                                ) {
+                                                    Column(
+                                                        modifier = Modifier.padding(10.dp),
+                                                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                                                    ) {
+                                                        Row(
+                                                            verticalAlignment = Alignment.CenterVertically,
+                                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                                            modifier = Modifier.fillMaxWidth()
+                                                        ) {
+                                                            Surface(
+                                                                shape = RoundedCornerShape(4.dp),
+                                                                color = IndigoPrimary.copy(alpha = 0.14f)
+                                                            ) {
+                                                                Text(
+                                                                    text = pwLec.subject.displayName,
+                                                                    fontSize = 9.sp,
+                                                                    fontWeight = FontWeight.Bold,
+                                                                    color = IndigoPrimary,
+                                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                                )
+                                                            }
+                                                            Text(
+                                                                text = "▶ Watch (${pwLec.durationMinutes}m)",
+                                                                fontSize = 9.sp,
+                                                                fontWeight = FontWeight.ExtraBold,
+                                                                color = EmeraldSuccess
+                                                            )
+                                                        }
+                                                        Text(
+                                                            text = pwLec.title,
+                                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                                            maxLines = 2,
+                                                            color = MaterialTheme.colorScheme.onSurface
+                                                        )
+                                                        Text(
+                                                            text = pwLec.instructor,
+                                                            fontSize = 10.sp,
+                                                            maxLines = 1,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                        )
+                                                    }
                                                 }
                                             }
                                         }
