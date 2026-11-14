@@ -52,6 +52,10 @@ fun HomeScreen(
     arcstfugPortalAiState: AiUiState = AiUiState.Idle,
     onAskArcstfugPortalAi: (String, Boolean) -> Unit = { _, _ -> },
     onPostCustomAnnouncement: (String, String, String, String) -> Unit = { _, _, _, _ -> },
+    onDonateAndSaveBatch: (String) -> Unit = {},
+    onDonateCustomPwBatch: (String, String, Boolean) -> Unit = { _, _, _ -> },
+    isAutoSaveOnOpenEnabled: Boolean = true,
+    onToggleAutoSaveOnOpen: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val uriHandler = LocalUriHandler.current
@@ -60,6 +64,11 @@ fun HomeScreen(
     var noticeCategoryInput by remember { mutableStateOf("OFFICIAL NOTICE") }
     var noticeMessageInput by remember { mutableStateOf("") }
     var arcstfugAiQueryInput by remember { mutableStateOf("") }
+    var showBatchDonateDialog by remember { mutableStateOf(false) }
+    var customDonateBatchInput by remember { mutableStateOf("ARJUNA JEE 2.0 2027") }
+    var customDonorNameInput by remember(userProfile.name) {
+        mutableStateOf(userProfile.name.takeIf { it.isNotBlank() && it != "Student Name" } ?: "PW Student Donor")
+    }
 
     val activeLecture = allLectures.firstOrNull { it.progressSec > 0 && !it.isCompleted }
         ?: allLectures.firstOrNull()
@@ -610,12 +619,24 @@ fun HomeScreen(
                                     color = RoseContainer,
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Text(
-                                        text = arcstfugPortalAiState.message,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = RoseError,
-                                        modifier = Modifier.padding(12.dp)
-                                    )
+                                    Column(
+                                        modifier = Modifier.padding(12.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Text(
+                                            text = arcstfugPortalAiState.message,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = RoseError
+                                        )
+                                        OutlinedButton(
+                                            onClick = {
+                                                onAskArcstfugPortalAi(arcstfugAiQueryInput, false)
+                                            },
+                                            shape = RoundedCornerShape(8.dp)
+                                        ) {
+                                            Text("🔄 Retry AI Request", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                    }
                                 }
                             }
                             else -> {}
@@ -793,7 +814,7 @@ fun HomeScreen(
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     Text(
-                                        text = "⚡ PW All Courses API Bridge",
+                                        text = "⚡ StudyOcean PW & PW All Courses Bridge",
                                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
@@ -802,7 +823,7 @@ fun HomeScreen(
                                         color = EmeraldSuccess.copy(alpha = 0.16f)
                                     ) {
                                         Text(
-                                            text = "🟢 CONNECTED",
+                                            text = "🟢 24 BATCHES LIVE",
                                             fontSize = 9.sp,
                                             fontWeight = FontWeight.ExtraBold,
                                             color = EmeraldSuccess,
@@ -811,7 +832,7 @@ fun HomeScreen(
                                     }
                                 }
                                 Text(
-                                    text = "JEE (Lakshya, Arjuna, Prayas) • NEET (Yakeen, Lakshya, Arjuna) • Class 9–12",
+                                    text = "All StudyOcean PW Batches • Video Lectures, DPPs & Smart-Board Class Notes Added",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -819,24 +840,38 @@ fun HomeScreen(
                         }
 
                         val homePwPresets = listOf(
-                            Triple("🌐 All JEE + NEET + 9–12", "ALL_JEE_NEET_9_TO_12", PwCourseApiService.DEFAULT_PW_BATCHES_API_URL),
-                            Triple("⚡ Lakshya JEE (12th)", "LAKSHYA_JEE_2026", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=JEE&class=12"),
-                            Triple("🔥 Arjuna JEE (11th)", "ARJUNA_JEE_2026", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=JEE&class=11"),
-                            Triple("🚀 Prayas JEE (Dropper)", "PRAYAS_JEE_2026", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=JEE&class=12+"),
-                            Triple("🩺 Yakeen NEET (Dropper)", "YAKEEN_NEET_2026", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=NEET&class=12+"),
-                            Triple("🧬 Lakshya NEET (12th)", "LAKSHYA_NEET_2026", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=NEET&class=12"),
-                            Triple("🔬 Arjuna NEET (11th)", "ARJUNA_NEET_2026", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=NEET&class=11"),
-                            Triple("🎓 Parishram Class 12", "PARISHRAM_CLASS12_2026", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=BOARD_EXAM&class=12"),
-                            Triple("📘 Uday Class 11", "UDAY_CLASS11_2026", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=BOARD_EXAM&class=11"),
-                            Triple("🎯 Udaan Class 10", "UDAAN_CLASS10_2026", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=BOARD_EXAM&class=10"),
-                            Triple("🌱 Neev Class 9", "NEEV_CLASS9_2026", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=BOARD_EXAM&class=9")
+                            Triple("🌊 All 24 StudyOcean PW Batches", "ALL_JEE_NEET_9_TO_12", ExternalStudyLinks.STUDYOCEAN_PW_PORTAL_URL),
+                            Triple("🔥 ARJUNA JEE 2.0 2027", "ARJUNA_JEE_2_0_2027", ExternalStudyLinks.STUDYOCEAN_PW_PORTAL_URL),
+                            Triple("⚡ ARJUNA JEE 2027", "ARJUNA_JEE_2027", ExternalStudyLinks.STUDYOCEAN_PW_PORTAL_URL),
+                            Triple("🎯 LAKSHYA JEE 2027", "LAKSHYA_JEE_2027", ExternalStudyLinks.STUDYOCEAN_PW_PORTAL_URL),
+                            Triple("👑 LAKSHYA JEE 2.0 2027", "LAKSHYA_JEE_2_0_2027", ExternalStudyLinks.STUDYOCEAN_PW_PORTAL_URL),
+                            Triple("🚀 PRAYAS JEE 2027", "PRAYAS_JEE_2027", ExternalStudyLinks.STUDYOCEAN_PW_PORTAL_URL),
+                            Triple("💥 PRAYAS JEE 2.0 2027", "PRAYAS_JEE_2_0_2027", ExternalStudyLinks.STUDYOCEAN_PW_PORTAL_URL),
+                            Triple("🩺 YAKEEN NEET 2.0 2027", "YAKEEN_NEET_2_0_2027", ExternalStudyLinks.STUDYOCEAN_PW_PORTAL_URL),
+                            Triple("🩺 YAKEEN NEET 2027", "YAKEEN_NEET_2027", ExternalStudyLinks.STUDYOCEAN_PW_PORTAL_URL),
+                            Triple("🧬 LAKSHYA NEET 2027", "LAKSHYA_NEET_2027", ExternalStudyLinks.STUDYOCEAN_PW_PORTAL_URL),
+                            Triple("🔬 ARJUNA NEET 2027", "ARJUNA_NEET_2027", ExternalStudyLinks.STUDYOCEAN_PW_PORTAL_URL),
+                            Triple("📘 UDAY 2027 (Class 11)", "UDAY_2027", ExternalStudyLinks.STUDYOCEAN_PW_PORTAL_URL),
+                            Triple("🎓 PARISHRAM 2027 (Class 12)", "PARISHRAM_2027", ExternalStudyLinks.STUDYOCEAN_PW_PORTAL_URL),
+                            Triple("🎯 UDAAN 2027 (Class 10)", "UDAAN_2027", ExternalStudyLinks.STUDYOCEAN_PW_PORTAL_URL),
+                            Triple("🌱 NEEV 2027 (Class 9)", "NEEV_2027", ExternalStudyLinks.STUDYOCEAN_PW_PORTAL_URL),
+                            Triple("⚡ Lakshya JEE 2026", "LAKSHYA_JEE_2026", PwCourseApiService.DEFAULT_PW_BATCHES_API_URL),
+                            Triple("🔥 Arjuna JEE 2026", "ARJUNA_JEE_2026", PwCourseApiService.DEFAULT_PW_BATCHES_API_URL),
+                            Triple("🚀 Prayas JEE 2026", "PRAYAS_JEE_2026", PwCourseApiService.DEFAULT_PW_BATCHES_API_URL),
+                            Triple("🩺 Yakeen NEET 2026", "YAKEEN_NEET_2026", PwCourseApiService.DEFAULT_PW_BATCHES_API_URL),
+                            Triple("🧬 Lakshya NEET 2026", "LAKSHYA_NEET_2026", PwCourseApiService.DEFAULT_PW_BATCHES_API_URL),
+                            Triple("🔬 Arjuna NEET 2026", "ARJUNA_NEET_2026", PwCourseApiService.DEFAULT_PW_BATCHES_API_URL),
+                            Triple("🎓 Parishram Class 12", "PARISHRAM_CLASS12_2026", PwCourseApiService.DEFAULT_PW_BATCHES_API_URL),
+                            Triple("📘 Uday Class 11", "UDAY_CLASS11_2026", PwCourseApiService.DEFAULT_PW_BATCHES_API_URL),
+                            Triple("🎯 Udaan Class 10", "UDAAN_CLASS10_2026", PwCourseApiService.DEFAULT_PW_BATCHES_API_URL),
+                            Triple("🌱 Neev Class 9", "NEEV_CLASS9_2026", PwCourseApiService.DEFAULT_PW_BATCHES_API_URL)
                         )
 
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             items(homePwPresets) { (label, tag, endpoint) ->
                                 OutlinedButton(
                                     onClick = {
-                                        onSendPwApiRequest(endpoint, tag, false)
+                                        onSendPwApiRequest(endpoint, tag, true)
                                     },
                                     shape = RoundedCornerShape(10.dp),
                                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
@@ -854,7 +889,7 @@ fun HomeScreen(
                             Button(
                                 onClick = {
                                     onSendPwApiRequest(
-                                        PwCourseApiService.DEFAULT_PW_BATCHES_API_URL,
+                                        ExternalStudyLinks.STUDYOCEAN_PW_PORTAL_URL,
                                         "ALL_JEE_NEET_9_TO_12",
                                         false
                                     )
@@ -873,17 +908,17 @@ fun HomeScreen(
                                         color = Color.White
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Syncing All PW Courses...", fontSize = 11.sp, color = Color.White)
+                                    Text("Syncing All StudyOcean Batches...", fontSize = 11.sp, color = Color.White)
                                 } else {
                                     Icon(
-                                        imageVector = Icons.Filled.Send,
+                                        imageVector = Icons.Filled.CloudSync,
                                         contentDescription = null,
                                         modifier = Modifier.size(14.dp),
                                         tint = Color.White
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = "Send PW All Courses API Request",
+                                        text = "Sync All StudyOcean Batches",
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color.White
@@ -898,7 +933,7 @@ fun HomeScreen(
                                         onOpenBatch(existing.id)
                                     } else {
                                         onSendPwApiRequest(
-                                            PwCourseApiService.DEFAULT_PW_BATCHES_API_URL,
+                                            ExternalStudyLinks.STUDYOCEAN_PW_PORTAL_URL,
                                             "ALL_JEE_NEET_9_TO_12",
                                             true
                                         )
@@ -918,12 +953,220 @@ fun HomeScreen(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = "Run Course",
+                                    text = "Open Batch",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White
                                 )
                             }
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                uriHandler.openUri(ExternalStudyLinks.STUDYOCEAN_PW_PORTAL_URL)
+                            },
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("home_open_studyocean_portal_btn")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Public,
+                                contentDescription = null,
+                                modifier = Modifier.size(15.dp),
+                                tint = IndigoPrimary
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "🌊 Open StudyOcean PW All-Batches Hub (Lectures • DPPs • Notes)",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = IndigoPrimary
+                            )
+                        }
+
+                        // 🎁 Batch Donate Button & Direct Auto-Save on Open Row
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color(0xFFFFFBEB),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF59E0B)),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("home_batch_donate_surface")
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.CardGiftcard,
+                                            contentDescription = "Batch Donate",
+                                            tint = Color(0xFFD97706),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Column {
+                                            Text(
+                                                text = "🎁 Batch Donate • Direct Save on Open",
+                                                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.ExtraBold),
+                                                color = Color(0xFF78350F)
+                                            )
+                                            Text(
+                                                text = if (isAutoSaveOnOpenEnabled) {
+                                                    "ON: Premium Batch open hote hi direct save ho jayega ✓"
+                                                } else {
+                                                    "Tap 'Batch Donate' button to save any batch"
+                                                },
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = Color(0xFF92400E)
+                                            )
+                                        }
+                                    }
+                                    Switch(
+                                        checked = isAutoSaveOnOpenEnabled,
+                                        onCheckedChange = onToggleAutoSaveOnOpen,
+                                        modifier = Modifier.testTag("home_batch_donate_autosave_switch")
+                                    )
+                                }
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Button(
+                                        onClick = { showBatchDonateDialog = true },
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD97706)),
+                                        shape = RoundedCornerShape(10.dp),
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .testTag("home_batch_donate_btn")
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.VolunteerActivism,
+                                            contentDescription = null,
+                                            tint = Color.White,
+                                            modifier = Modifier.size(15.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = "🎁 Batch Donate (Direct Save)",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = Color.White
+                                        )
+                                    }
+
+                                    OutlinedButton(
+                                        onClick = {
+                                            onDonateAndSaveBatch(lastSyncedPwBatchId)
+                                            onOpenBatch(lastSyncedPwBatchId)
+                                        },
+                                        shape = RoundedCornerShape(10.dp),
+                                        modifier = Modifier
+                                            .weight(0.95f)
+                                            .testTag("home_direct_save_open_btn")
+                                    ) {
+                                        Text(
+                                            text = "⚡ Open & Direct Save",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF78350F)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        if (showBatchDonateDialog) {
+                            AlertDialog(
+                                onDismissRequest = { showBatchDonateDialog = false },
+                                title = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.CardGiftcard,
+                                            contentDescription = null,
+                                            tint = Color(0xFFD97706)
+                                        )
+                                        Text(
+                                            text = "🎁 PW Premium Batch Donate",
+                                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.ExtraBold)
+                                        )
+                                    }
+                                },
+                                text = {
+                                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                        Text(
+                                            text = "Select or type any PW Premium Batch to Donate. Open hote hi batch aapke Vault & Cloud me direct save ho jayega!",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        val quickDonateBatches = listOf(
+                                            "ARJUNA JEE 2.0 2027" to "ARJUNA_JEE_2_0_2027",
+                                            "ARJUNA JEE 2027" to "ARJUNA_JEE_2027",
+                                            "LAKSHYA JEE 2027" to "LAKSHYA_JEE_2027",
+                                            "UDAY 2027" to "UDAY_2027",
+                                            "PRAYAS JEE 2026" to "PRAYAS_JEE_2026",
+                                            "YAKEEN NEET 2026" to "YAKEEN_NEET_2026"
+                                        )
+                                        LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                            items(quickDonateBatches) { (label, tag) ->
+                                                FilterChip(
+                                                    selected = customDonateBatchInput == tag || customDonateBatchInput == label,
+                                                    onClick = { customDonateBatchInput = tag },
+                                                    label = { Text(label, fontSize = 11.sp, fontWeight = FontWeight.Bold) }
+                                                )
+                                            }
+                                        }
+                                        OutlinedTextField(
+                                            value = customDonateBatchInput,
+                                            onValueChange = { customDonateBatchInput = it },
+                                            label = { Text("Premium Batch Name / PW Tag") },
+                                            singleLine = true,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                        OutlinedTextField(
+                                            value = customDonorNameInput,
+                                            onValueChange = { customDonorNameInput = it },
+                                            label = { Text("Donated By (Your Name)") },
+                                            singleLine = true,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                    }
+                                },
+                                confirmButton = {
+                                    Button(
+                                        onClick = {
+                                            showBatchDonateDialog = false
+                                            onDonateCustomPwBatch(
+                                                customDonateBatchInput,
+                                                customDonorNameInput,
+                                                true
+                                            )
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = EmeraldSuccess),
+                                        modifier = Modifier.testTag("confirm_batch_donate_dialog_btn")
+                                    ) {
+                                        Text("🎁 Donate & Open (Direct Save)", color = Color.White, fontWeight = FontWeight.Bold)
+                                    }
+                                },
+                                dismissButton = {
+                                    TextButton(onClick = { showBatchDonateDialog = false }) {
+                                        Text("Cancel")
+                                    }
+                                }
+                            )
                         }
 
                         if (pwApiSyncState is AiUiState.Success) {

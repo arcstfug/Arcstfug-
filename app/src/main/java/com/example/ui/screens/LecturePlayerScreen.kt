@@ -534,6 +534,36 @@ fun LecturePlayerScreen(
                                         }
                                     }
 
+                                    val quickLectureDoubts = listOf(
+                                        "⚡ Derive Key Formula of ${lecture.chapterTitle}",
+                                        "🎯 Solve a High-Yield JEE/NEET Numerical from ${lecture.title}",
+                                        "📘 Important Exam Shortcuts & Common Traps"
+                                    )
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        quickLectureDoubts.forEachIndexed { idx, qPrompt ->
+                                            val shortLabel = when (idx) {
+                                                0 -> "⚡ Key Formula"
+                                                1 -> "🎯 Numerical"
+                                                else -> "📘 Exam Trick"
+                                            }
+                                            OutlinedButton(
+                                                onClick = {
+                                                    doubtInput = qPrompt
+                                                    onPostDoubt(qPrompt)
+                                                },
+                                                enabled = doubtAiState !is AiUiState.Loading && doubtAiState !is AiUiState.Streaming,
+                                                shape = RoundedCornerShape(8.dp),
+                                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                                modifier = Modifier.weight(1f)
+                                            ) {
+                                                Text(shortLabel, fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                                            }
+                                        }
+                                    }
+
                                     OutlinedTextField(
                                         value = doubtInput,
                                         onValueChange = { doubtInput = it },
@@ -547,12 +577,13 @@ fun LecturePlayerScreen(
 
                                     Button(
                                         onClick = {
-                                            if (doubtInput.isNotBlank()) {
-                                                onPostDoubt(doubtInput)
-                                                doubtInput = ""
+                                            val queryToSend = doubtInput.trim().ifEmpty {
+                                                "Explain the core concept, key formula derivation, and a solved JEE/NEET numerical example from ${lecture.title} (${lecture.chapterTitle})"
                                             }
+                                            onPostDoubt(queryToSend)
+                                            doubtInput = ""
                                         },
-                                        enabled = doubtAiState !is AiUiState.Loading,
+                                        enabled = doubtAiState !is AiUiState.Loading && doubtAiState !is AiUiState.Streaming,
                                         colors = ButtonDefaults.buttonColors(containerColor = IndigoPrimary),
                                         shape = RoundedCornerShape(10.dp),
                                         modifier = Modifier
@@ -630,12 +661,28 @@ fun LecturePlayerScreen(
                                                 color = RoseContainer,
                                                 modifier = Modifier.fillMaxWidth()
                                             ) {
-                                                Text(
-                                                    text = "AI Tutor Error: ${doubtAiState.message}",
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    color = RoseError,
-                                                    modifier = Modifier.padding(12.dp)
-                                                )
+                                                Column(
+                                                    modifier = Modifier.padding(12.dp),
+                                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                                ) {
+                                                    Text(
+                                                        text = "AI Tutor Error: ${doubtAiState.message}",
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = RoseError
+                                                    )
+                                                    OutlinedButton(
+                                                        onClick = {
+                                                            onPostDoubt(
+                                                                doubtInput.trim().ifEmpty {
+                                                                    "Explain the core concept and formula derivation from ${lecture.title}"
+                                                                }
+                                                            )
+                                                        },
+                                                        shape = RoundedCornerShape(8.dp)
+                                                    ) {
+                                                        Text("🔄 Retry with Gemini AI", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                                    }
+                                                }
                                             }
                                         }
                                     }

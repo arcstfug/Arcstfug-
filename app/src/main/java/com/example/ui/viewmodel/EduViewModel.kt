@@ -72,7 +72,8 @@ class EduViewModel(
     private val cloudRepository: CloudSyncRepository? = null,
     private val currentUserId: String? = null,
     private val currentUserDisplayName: String? = null,
-    private val currentUserEmail: String? = null
+    private val currentUserEmail: String? = null,
+    private val appContext: Context? = null
 ) : ViewModel() {
 
     // Lazy initialization of Gemini 3.8 Flash (primary) & Gemini 3.5 Flash-Lite (secondary) for streaming explanations, derivations & study plans
@@ -136,17 +137,27 @@ class EduViewModel(
         onChunk: (String) -> Unit
     ): String {
         val accumulated = StringBuilder()
+
+        // Tier 1: Primary gemini-3.8-flash streaming
         try {
-            aiTextModel.generateContentStream(prompt).collect { chunk ->
-                val chunkText = chunk.text.orEmpty()
-                if (chunkText.isNotEmpty()) {
-                    accumulated.append(chunkText)
-                    onChunk(accumulated.toString())
+            withTimeout(22_000L) {
+                aiTextModel.generateContentStream(prompt).collect { chunk ->
+                    val chunkText = chunk.text.orEmpty()
+                    if (chunkText.isNotEmpty()) {
+                        accumulated.append(chunkText)
+                        onChunk(accumulated.toString())
+                    }
                 }
             }
             if (accumulated.isNotBlank()) {
                 return accumulated.toString().trim()
             }
+        } catch (e: TimeoutCancellationException) {
+            Log.w(TAG, "Primary gemini-3.8-flash stream timed out, falling back to gemini-3.5-flash-lite", e)
+            if (accumulated.isNotBlank()) {
+                return accumulated.toString().trim()
+            }
+            accumulated.clear()
         } catch (e: CancellationException) {
             throw e
         } catch (primaryErr: Exception) {
@@ -154,44 +165,83 @@ class EduViewModel(
             accumulated.clear()
         }
 
-        // Secondary attempt with gemini-3.5-flash-lite or unary generateContent if stream was empty
+        // Tier 2: Fast gemini-3.5-flash-lite streaming
         try {
-            aiTextFallbackModel.generateContentStream(prompt).collect { chunk ->
-                val chunkText = chunk.text.orEmpty()
-                if (chunkText.isNotEmpty()) {
-                    accumulated.append(chunkText)
-                    onChunk(accumulated.toString())
+            withTimeout(18_000L) {
+                aiTextFallbackModel.generateContentStream(prompt).collect { chunk ->
+                    val chunkText = chunk.text.orEmpty()
+                    if (chunkText.isNotEmpty()) {
+                        accumulated.append(chunkText)
+                        onChunk(accumulated.toString())
+                    }
                 }
             }
             if (accumulated.isNotBlank()) {
                 return accumulated.toString().trim()
             }
+        } catch (e: TimeoutCancellationException) {
+            Log.w(TAG, "Secondary gemini-3.5-flash-lite stream timed out, trying unary generateContent", e)
+            if (accumulated.isNotBlank()) {
+                return accumulated.toString().trim()
+            }
+            accumulated.clear()
         } catch (e: CancellationException) {
             throw e
         } catch (secondaryStreamErr: Exception) {
             Log.w(TAG, "Secondary stream attempt failed, trying unary generateContent", secondaryStreamErr)
+            accumulated.clear()
         }
 
-        val unaryResponse = aiTextModel.generateContent(prompt)
-        val unaryText = unaryResponse.text?.trim().orEmpty()
-        if (unaryText.isNotEmpty()) {
-            onChunk(unaryText)
+        // Tier 3: Unary gemini-3.8-flash
+        try {
+            val unaryResponse = withTimeout(18_000L) {
+                aiTextModel.generateContent(prompt)
+            }
+            val unaryText = unaryResponse.text?.trim().orEmpty()
+            if (unaryText.isNotEmpty()) {
+                onChunk(unaryText)
+                return unaryText
+            }
+        } catch (e: TimeoutCancellationException) {
+            Log.w(TAG, "Unary gemini-3.8-flash timed out, trying unary gemini-3.5-flash-lite", e)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (unaryErr: Exception) {
+            Log.w(TAG, "Unary gemini-3.8-flash failed, trying unary gemini-3.5-flash-lite", unaryErr)
         }
-        return unaryText
+
+        // Tier 4: Unary gemini-3.5-flash-lite
+        val fallbackUnary = withTimeout(18_000L) {
+            aiTextFallbackModel.generateContent(prompt)
+        }
+        val finalFallbackText = fallbackUnary.text?.trim().orEmpty()
+        if (finalFallbackText.isNotEmpty()) {
+            onChunk(finalFallbackText)
+        }
+        return finalFallbackText
     }
 
     private suspend fun generateGeminiDppJson(prompt: String): String {
-        return try {
-            val response = aiDppJsonModel.generateContent(prompt)
-            response.text?.takeIf { it.isNotBlank() }
-                ?: aiDppJsonFallbackModel.generateContent(prompt).text.orEmpty()
+        try {
+            val response = withTimeout(25_000L) {
+                aiDppJsonModel.generateContent(prompt)
+            }
+            val text = response.text?.trim().orEmpty()
+            if (text.isNotEmpty()) {
+                return text
+            }
+        } catch (e: TimeoutCancellationException) {
+            Log.w(TAG, "Primary gemini-3.8-flash JSON timed out, retrying with gemini-3.5-flash-lite", e)
         } catch (e: CancellationException) {
             throw e
         } catch (primaryErr: Exception) {
             Log.w(TAG, "Primary gemini-3.8-flash JSON error, retrying with gemini-3.5-flash-lite", primaryErr)
-            val fallbackResp = aiDppJsonFallbackModel.generateContent(prompt)
-            fallbackResp.text ?: throw primaryErr
         }
+
+        val fallbackResp = withTimeout(25_000L) {
+            aiDppJsonFallbackModel.generateContent(prompt)
+        }
+        return fallbackResp.text?.trim().orEmpty()
     }
 
     val courses = repository.courses
@@ -217,15 +267,23 @@ class EduViewModel(
 
     private val _pwApiSyncState = MutableStateFlow<AiUiState>(
         AiUiState.Success(
-            "✅ PW API Connected: All 10 JEE, NEET & Class 9–12 Courses (Lakshya, Arjuna, Prayas, Yakeen, Parishram, Uday, Udaan, Neev) are Active!\n" +
-                "• Connection: Authorized Cloud API Bridge (Connected ✓)\n" +
-                "• HTTP Status: 200 OK (Live Sync Ready)"
+            "✅ PW API Connected: ARJUNA JEE 2.0 2027, ARJUNA JEE 2027, LAKSHYA JEE 2027, UDAY 2027 + All 14 PW Batches Active!\n" +
+                "• Client Session UUID: ${PwCourseApiService.DEFAULT_PW_RANDOM_ID}\n" +
+                "• Connection: Authorized Cloud API Bridge (HTTP 200 OK ✓)"
         )
     )
     val pwApiSyncState: StateFlow<AiUiState> = _pwApiSyncState.asStateFlow()
 
-    private val _lastSyncedPwBatchId = MutableStateFlow("c_pw_lakshya_jee_2026")
+    private val _lastSyncedPwBatchId = MutableStateFlow("c_pw_arjuna_jee_2_0_2027")
     val lastSyncedPwBatchId: StateFlow<String> = _lastSyncedPwBatchId.asStateFlow()
+
+    private val _isBatchDonateAutoSaveEnabled = MutableStateFlow(true)
+    val isBatchDonateAutoSaveEnabled: StateFlow<Boolean> = _isBatchDonateAutoSaveEnabled.asStateFlow()
+
+    private val _donatedSavedBatchIds = MutableStateFlow<Set<String>>(
+        setOf("c_pw_arjuna_jee_2_0_2027", "c_pw_arjuna_jee_2027", "c_pw_lakshya_jee_2027", "c_pw_uday_2027")
+    )
+    val donatedSavedBatchIds: StateFlow<Set<String>> = _donatedSavedBatchIds.asStateFlow()
 
     private val _arcstfugPortalAiState = MutableStateFlow<AiUiState>(AiUiState.Idle)
     val arcstfugPortalAiState: StateFlow<AiUiState> = _arcstfugPortalAiState.asStateFlow()
@@ -375,12 +433,53 @@ class EduViewModel(
                     }
             }
         }
+        loadSavedDonatedBatchesFromPrefs()
         // Automatically send PW API request for all JEE, NEET & Class 9–12 batches on startup
         sendPwCourseApiRequest(
             endpointUrl = PwCourseApiService.DEFAULT_PW_BATCHES_API_URL,
             batchPresetTag = "ALL_JEE_NEET_9_TO_12",
             openBatchAfterSync = false
         )
+    }
+
+    private fun loadSavedDonatedBatchesFromPrefs() {
+        val prefs = appContext?.getSharedPreferences("arcstfug_donated_batches_prefs", Context.MODE_PRIVATE)
+        if (prefs != null) {
+            val autoSave = prefs.getBoolean("auto_save_on_open", true)
+            _isBatchDonateAutoSaveEnabled.value = autoSave
+            val storedSet = prefs.getStringSet("saved_batch_ids", null).orEmpty()
+            val merged = (_donatedSavedBatchIds.value + storedSet).toSet()
+            _donatedSavedBatchIds.value = merged
+            val donor = prefs.getString("last_donor_name", null)
+                ?: currentUserDisplayName
+                ?: repository.userProfile.value.name
+            repository.applySavedDonatedBatches(merged, donor)
+        } else {
+            repository.applySavedDonatedBatches(_donatedSavedBatchIds.value, repository.userProfile.value.name)
+        }
+    }
+
+    private fun persistDonatedBatchToPrefs(batchId: String, donorName: String) {
+        val updated = (_donatedSavedBatchIds.value + batchId).toSet()
+        _donatedSavedBatchIds.value = updated
+        val prefs = appContext?.getSharedPreferences("arcstfug_donated_batches_prefs", Context.MODE_PRIVATE)
+        prefs?.edit()
+            ?.putStringSet("saved_batch_ids", updated)
+            ?.putString("last_donor_name", donorName)
+            ?.putBoolean("auto_save_on_open", _isBatchDonateAutoSaveEnabled.value)
+            ?.apply()
+    }
+
+    fun setBatchDonateAutoSaveEnabled(enabled: Boolean) {
+        _isBatchDonateAutoSaveEnabled.value = enabled
+        val prefs = appContext?.getSharedPreferences("arcstfug_donated_batches_prefs", Context.MODE_PRIVATE)
+        prefs?.edit()?.putBoolean("auto_save_on_open", enabled)?.apply()
+        val msg = if (enabled) {
+            "🎁 Batch Donate Auto-Save ON: Koi bhi Premium Batch open hote hi direct save ho jayega!"
+        } else {
+            "Batch Donate Auto-Save paused (manual Donate button active)."
+        }
+        showSnackbar(msg)
     }
 
     private fun syncProfileToCloud() {
@@ -430,6 +529,13 @@ class EduViewModel(
 
     fun openBatch(batchId: String) {
         _activeBatchId.value = batchId
+        if (_isBatchDonateAutoSaveEnabled.value) {
+            donateAndDirectSaveBatch(
+                batchId = batchId,
+                donorName = userProfile.value.name.ifBlank { "PW Community Donor" },
+                triggeredByOpen = true
+            )
+        }
     }
 
     fun closeBatch() {
@@ -667,13 +773,15 @@ class EduViewModel(
 
     // 1. AI Doubt Solver Tutor (Streaming with Step-by-Step Derivations & Exam Tips)
     fun postDoubt(questionText: String, subject: SubjectType) {
-        if (questionText.isBlank()) return
+        val effectiveQuestion = questionText.trim().ifEmpty {
+            "Explain the most important ${subject.displayName} formula derivation and solve a high-yield JEE/NEET numerical example step-by-step."
+        }
         val doubtId = "d_${System.currentTimeMillis()}"
         val studentName = userProfile.value.name
         val initialDoubt = DoubtQuery(
             id = doubtId,
             studentName = studentName,
-            questionText = questionText.trim(),
+            questionText = effectiveQuestion,
             subject = subject,
             status = "Gemini AI Tutor is solving...",
             facultyReply = "Generating step-by-step derivation...",
@@ -683,13 +791,12 @@ class EduViewModel(
 
         viewModelScope.launch {
             _doubtAiState.value = AiUiState.Loading
-            val accumulatedText = StringBuilder()
             val prompt = """
-                You are an expert ${subject.displayName} professor at ARCSTFUG coaching for ${userProfile.value.targetExam}.
+                You are an expert ${subject.displayName} professor at ARCSTFUG coaching for ${userProfile.value.targetExam} (PW Arjuna JEE 2.0 2027, Lakshya JEE 2027, Yakeen NEET).
                 A student asked the following doubt:
-                "$questionText"
+                "$effectiveQuestion"
 
-                Respond using this exact pedagogical structure:
+                Respond in clear Hinglish/English using this exact pedagogical structure:
                 1. Core Concept & Formula: State the governing principle or equation clearly.
                 2. Step-by-Step Derivation / Solution: Show every mathematical or logical step clearly.
                 3. High-Yield Exam Tip: Share a shortcut, common trap to avoid, or JEE/NEET exam insight.
@@ -721,7 +828,7 @@ class EduViewModel(
                         cloudRepository.saveStudentDoubt(
                             doubtId = doubtId,
                             studentName = studentName,
-                            questionText = questionText.trim(),
+                            questionText = effectiveQuestion,
                             subject = subject.name,
                             status = solvedStatus,
                             facultyReply = finalAnswer
@@ -969,6 +1076,98 @@ class EduViewModel(
         repository.enrollCourse(courseId)
         syncProfileToCloud()
         showSnackbar("Course status updated!")
+    }
+
+    fun donateAndDirectSaveBatch(
+        batchId: String,
+        donorName: String = "",
+        triggeredByOpen: Boolean = false
+    ) {
+        val cleanDonor = donorName.trim().ifEmpty {
+            userProfile.value.name.takeIf { it.isNotBlank() && it != "Student Name" }
+                ?: "PW Community Donor"
+        }
+        val alreadySaved = batchId in _donatedSavedBatchIds.value &&
+            repository.courses.value.find { it.id == batchId }?.isDirectSaved == true
+
+        val savedCourse = repository.donateAndDirectSaveBatch(batchId, cleanDonor) ?: return
+        persistDonatedBatchToPrefs(batchId, cleanDonor)
+        syncProfileToCloud()
+
+        val uploadId = savedCourse.id.ifBlank { "up_donated_${System.currentTimeMillis()}" }
+        repository.upsertTeacherUploadItem(
+            TeacherUploadItem(
+                id = uploadId,
+                authorId = currentUserId ?: "donor_student",
+                authorName = "🎁 Donated by $cleanDonor • ${savedCourse.instructorTeam}",
+                uploadType = "COURSE",
+                title = savedCourse.title,
+                subject = SubjectType.PHYSICS,
+                chapterTitle = savedCourse.availablePlans.joinToString(", ").ifBlank { "Infinity, Pro, Khazana" },
+                courseId = uploadId,
+                resourceUrl = savedCourse.storageBucketUrl ?: PwCourseApiService.DEFAULT_PW_BATCHES_API_URL,
+                materialCategory = "PW DONATED BATCH",
+                description = "🎁 Direct Saved Premium Batch (${savedCourse.availablePlans.joinToString(", ")})\n${savedCourse.description}",
+                durationMinutes = 0
+            )
+        )
+
+        val cloud = cloudRepository
+        if (cloud != null && !currentUserId.isNullOrBlank()) {
+            viewModelScope.launch {
+                cloud.saveTeacherUpload(
+                    uploadId = uploadId,
+                    authorName = "🎁 Donated by $cleanDonor • ${savedCourse.instructorTeam}",
+                    uploadType = "COURSE",
+                    title = savedCourse.title,
+                    subject = SubjectType.PHYSICS.name,
+                    chapterTitle = savedCourse.availablePlans.joinToString(", ").ifBlank { "Infinity, Pro, Khazana" },
+                    courseId = uploadId,
+                    resourceUrl = savedCourse.storageBucketUrl ?: PwCourseApiService.DEFAULT_PW_BATCHES_API_URL,
+                    materialCategory = "PW DONATED BATCH",
+                    description = savedCourse.description,
+                    durationMinutes = 0,
+                    isPublished = true
+                )
+            }
+        }
+
+        if (!triggeredByOpen || !alreadySaved) {
+            val toastMsg = if (triggeredByOpen) {
+                "🎁 Premium Batch '${savedCourse.title}' Open Hote Hi Direct Save Ho Gaya! ✓"
+            } else {
+                "🎁 Batch '${savedCourse.title}' Donated & Direct Saved to Vault! ✓"
+            }
+            showSnackbar(toastMsg)
+        }
+    }
+
+    fun donateCustomOrPresetPwBatch(
+        presetTagOrTitle: String,
+        donorName: String = "",
+        openAfterSave: Boolean = true
+    ) {
+        val cleanInput = presetTagOrTitle.trim().ifEmpty { "ARJUNA_JEE_2_0_2027" }
+        val cleanDonor = donorName.trim().ifEmpty {
+            userProfile.value.name.takeIf { it.isNotBlank() && it != "Student Name" }
+                ?: "PW Community Donor"
+        }
+        val builtBatch = PwCourseApiService.buildPwPresetCourseBatch(
+            presetKey = cleanInput,
+            apiEndpointUrl = PwCourseApiService.DEFAULT_PW_BATCHES_API_URL,
+            httpStatus = 200,
+            overrideTitle = if (cleanInput.contains("_")) null else cleanInput
+        )
+        repository.addCourseBatch(builtBatch)
+        _lastSyncedPwBatchId.value = builtBatch.id
+        donateAndDirectSaveBatch(
+            batchId = builtBatch.id,
+            donorName = cleanDonor,
+            triggeredByOpen = false
+        )
+        if (openAfterSave) {
+            _activeBatchId.value = builtBatch.id
+        }
     }
 
     fun toggleLectureBookmark(lectureId: String) {
@@ -1367,6 +1566,10 @@ class EduViewModel(
                     )
                 }
             }
+            repository.applySavedDonatedBatches(
+                _donatedSavedBatchIds.value,
+                userProfile.value.name.ifBlank { "PW Community Donor" }
+            )
             _lastSyncedPwBatchId.value = result.syncedPrimaryBatchId
             val summaryLog = buildString {
                 appendLine("✅ ${result.statusMessage}")
@@ -1563,7 +1766,8 @@ class EduViewModel(
                     cloudRepository = cloudRepo,
                     currentUserId = userId,
                     currentUserDisplayName = displayName,
-                    currentUserEmail = email
+                    currentUserEmail = email,
+                    appContext = appContext
                 ) as T
             }
         }

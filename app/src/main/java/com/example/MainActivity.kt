@@ -45,6 +45,12 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        configureAppCheck(this, intent)
+    }
 }
 
 @Composable
@@ -156,6 +162,7 @@ fun MainAppContent(
     val studyPlannerAiState by viewModel.studyPlannerAiState.collectAsStateWithLifecycle()
     val pwApiSyncState by viewModel.pwApiSyncState.collectAsStateWithLifecycle()
     val lastSyncedPwBatchId by viewModel.lastSyncedPwBatchId.collectAsStateWithLifecycle()
+    val isBatchDonateAutoSaveEnabled by viewModel.isBatchDonateAutoSaveEnabled.collectAsStateWithLifecycle()
     val arcstfugPortalAiState by viewModel.arcstfugPortalAiState.collectAsStateWithLifecycle()
 
     val activeBatchId by viewModel.activeBatchId.collectAsStateWithLifecycle()
@@ -277,7 +284,10 @@ fun MainAppContent(
                 onBack = { viewModel.closeBatch() },
                 onOpenLecture = { viewModel.openLecture(it) },
                 onStartDpp = { viewModel.startDpp(it) },
-                onEnrollToggle = { viewModel.enrollCourse(activeBatch.id) }
+                onEnrollToggle = { viewModel.enrollCourse(activeBatch.id) },
+                onDonateAndSaveBatch = { viewModel.donateAndDirectSaveBatch(activeBatch.id) },
+                isAutoSaveOnOpenEnabled = isBatchDonateAutoSaveEnabled,
+                onToggleAutoSaveOnOpen = { viewModel.setBatchDonateAutoSaveEnabled(it) }
             )
         }
 
@@ -386,6 +396,14 @@ fun MainAppContent(
                             onPostCustomAnnouncement = { title, msg, cat, url ->
                                 viewModel.postCustomAnnouncement(title, msg, cat, url)
                             },
+                            onDonateAndSaveBatch = { batchId ->
+                                viewModel.donateAndDirectSaveBatch(batchId)
+                            },
+                            onDonateCustomPwBatch = { tagOrTitle, donor, openAfter ->
+                                viewModel.donateCustomOrPresetPwBatch(tagOrTitle, donor, openAfter)
+                            },
+                            isAutoSaveOnOpenEnabled = isBatchDonateAutoSaveEnabled,
+                            onToggleAutoSaveOnOpen = { viewModel.setBatchDonateAutoSaveEnabled(it) },
                             modifier = Modifier.fillMaxSize()
                         )
                     }
@@ -440,6 +458,9 @@ fun MainAppContent(
                             courses = courses,
                             onOpenBatch = { viewModel.openBatch(it) },
                             onEnrollToggle = { viewModel.enrollCourse(it) },
+                            onDonateAndSaveBatch = { viewModel.donateAndDirectSaveBatch(it) },
+                            isAutoSaveOnOpenEnabled = isBatchDonateAutoSaveEnabled,
+                            onToggleAutoSaveOnOpen = { viewModel.setBatchDonateAutoSaveEnabled(it) },
                             modifier = Modifier.fillMaxSize()
                         )
                     }

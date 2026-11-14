@@ -214,7 +214,7 @@ fun TeacherAdminScreen(
     var pwApiEndpointUrl by remember {
         mutableStateOf(PwCourseApiService.DEFAULT_PW_BATCHES_API_URL)
     }
-    var pwBatchPresetTag by remember { mutableStateOf("LAKSHYA_JEE_2026") }
+    var pwBatchPresetTag by remember { mutableStateOf("ARJUNA_JEE_2_0_2027") }
     var pwBearerToken by remember { mutableStateOf("") }
 
     Scaffold(
@@ -1831,7 +1831,11 @@ fun TeacherAdminScreen(
 
                                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     val pwPresets = listOf(
-                                        Triple("🌐 All JEE + NEET + Class 9–12", "ALL_JEE_NEET_9_TO_12", PwCourseApiService.DEFAULT_PW_BATCHES_API_URL),
+                                        Triple("🔥 ARJUNA JEE 2.0 2027 (11th)", "ARJUNA_JEE_2_0_2027", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=JEE&class=11&batch=arjuna-2.0-2027"),
+                                        Triple("⚡ ARJUNA JEE 2027 (11th)", "ARJUNA_JEE_2027", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=JEE&class=11&batch=arjuna-2027"),
+                                        Triple("🎯 LAKSHYA JEE 2027 (12th)", "LAKSHYA_JEE_2027", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=JEE&class=12&batch=lakshya-2027"),
+                                        Triple("📘 UDAY 2027 (Class 11)", "UDAY_2027", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=BOARD_EXAM&class=11&batch=uday-2027"),
+                                        Triple("🌐 All 14 PW Batches (2027 + 2026)", "ALL_JEE_NEET_9_TO_12", PwCourseApiService.DEFAULT_PW_BATCHES_API_URL),
                                         Triple("⚡ PW Lakshya JEE 2026 (12th)", "LAKSHYA_JEE_2026", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=JEE&class=12"),
                                         Triple("🔥 PW Arjuna JEE 2026 (11th)", "ARJUNA_JEE_2026", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=JEE&class=11"),
                                         Triple("🚀 PW Prayas Dropper JEE", "PRAYAS_JEE_2026", "https://api.penpencil.co/v3/batches/all-batches?mode=1&filter=true&exam=JEE&class=12+"),

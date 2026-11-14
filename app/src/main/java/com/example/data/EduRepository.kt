@@ -76,6 +76,61 @@ class EduRepository {
         }
     }
 
+    fun donateAndDirectSaveBatch(
+        courseId: String,
+        donorName: String = "PW Community Donor"
+    ): CourseBatch? {
+        val cleanDonor = donorName.trim().ifEmpty { "PW Community Donor" }
+        var updatedCourse: CourseBatch? = null
+        _courses.update { list ->
+            list.map { course ->
+                if (course.id == courseId) {
+                    val mergedPlans = (course.availablePlans + listOf("Infinity", "Pro", "Khazana")).distinct()
+                    val badge = if (course.featureBadge?.contains("DONATED") == true) {
+                        course.featureBadge
+                    } else {
+                        "🎁 DONATED • SAVED"
+                    }
+                    val saved = course.copy(
+                        isEnrolled = true,
+                        isDonatedBatch = true,
+                        isDirectSaved = true,
+                        donatedBy = cleanDonor,
+                        availablePlans = mergedPlans,
+                        featureBadge = badge
+                    )
+                    updatedCourse = saved
+                    saved
+                } else {
+                    course
+                }
+            }
+        }
+        return updatedCourse
+    }
+
+    fun applySavedDonatedBatches(savedIds: Set<String>, donorName: String = "PW Community Donor") {
+        if (savedIds.isEmpty()) return
+        val cleanDonor = donorName.trim().ifEmpty { "PW Community Donor" }
+        _courses.update { list ->
+            list.map { course ->
+                if (course.id in savedIds) {
+                    val mergedPlans = (course.availablePlans + listOf("Infinity", "Pro", "Khazana")).distinct()
+                    course.copy(
+                        isEnrolled = true,
+                        isDonatedBatch = true,
+                        isDirectSaved = true,
+                        donatedBy = cleanDonor,
+                        availablePlans = mergedPlans,
+                        featureBadge = "🎁 DONATED • SAVED"
+                    )
+                } else {
+                    course
+                }
+            }
+        }
+    }
+
     fun updateLectureProgress(lectureId: String, progressSec: Int, isCompleted: Boolean) {
         _courses.update { list ->
             list.map { course ->
@@ -400,7 +455,20 @@ class EduRepository {
 
     fun addCourseBatch(course: CourseBatch) {
         _courses.update { existing ->
-            listOf(course) + existing.filterNot { it.id == course.id }
+            val previous = existing.find { it.id == course.id }
+            val merged = if (previous != null && (previous.isDonatedBatch || previous.isDirectSaved)) {
+                course.copy(
+                    isEnrolled = true,
+                    isDonatedBatch = true,
+                    isDirectSaved = true,
+                    donatedBy = previous.donatedBy,
+                    availablePlans = (course.availablePlans + previous.availablePlans).distinct(),
+                    featureBadge = "🎁 DONATED • SAVED"
+                )
+            } else {
+                course
+            }
+            listOf(merged) + existing.filterNot { it.id == course.id }
         }
     }
 
@@ -1550,6 +1618,18 @@ class EduRepository {
                 uploadedAtLabel = "Official Vault"
             ),
             StudyMaterial(
+                id = "mat_studyocean_pw_all_batches",
+                title = "🌊 StudyOcean PW All Batches Vault (Lectures • DPPs • Class Notes)",
+                subject = SubjectType.PHYSICS,
+                chapterTitle = "ARJUNA JEE 2.0 2027 • LAKSHYA JEE 2027 • PRAYAS 2027 • YAKEEN NEET 2027 • UDAY 2027",
+                courseId = "c_pw_arjuna_jee_2_0_2027",
+                category = "StudyOcean PW Vault",
+                description = "Complete StudyOcean PW All-Batches Hub with Video Lectures, Daily Practice Problems (DPP), and Smart-Board PDF Class Notes for JEE, NEET & Class 9–12.",
+                resourceUrl = ExternalStudyLinks.STUDYOCEAN_PW_PORTAL_URL,
+                authorName = "StudyOcean PW & ARCSTFUG Vault",
+                uploadedAtLabel = "All 24 Batches Live"
+            ),
+            StudyMaterial(
                 id = "mat_aits_mission_jeet",
                 title = "All-India Test Series (Mission JEET CBT Exam Portal)",
                 subject = SubjectType.CHEMISTRY,
@@ -1567,6 +1647,16 @@ class EduRepository {
     private fun createInitialAnnouncements(): List<AnnouncementNotice> {
         return listOf(
             AnnouncementNotice(
+                id = "notice_studyocean_pw_all_batches_0",
+                title = "🌊 All 24 StudyOcean PW Batches (Lectures, DPPs & Notes) Added!",
+                message = "Sabhi 2027 & 2026 Batches — ARJUNA JEE 2.0 2027, ARJUNA JEE 2027, LAKSHYA JEE 2027, LAKSHYA JEE 2.0 2027, PRAYAS JEE 2027, YAKEEN NEET 2.0 2027, UDAY 2027, PARISHRAM 2027, UDAAN 2027 & NEEV 2027 — ke Video Lectures, DPPs aur Smart-Board Class Notes add ho chuke hain!",
+                categoryTag = "STUDYOCEAN PW LIVE",
+                authorName = "ARCSTFUG Academic Cell",
+                timestampLabel = "Pinned • Just Now",
+                actionUrl = ExternalStudyLinks.STUDYOCEAN_PW_PORTAL_URL,
+                isPinned = true
+            ),
+            AnnouncementNotice(
                 id = "notice_arcstfug_web_ai_1",
                 title = "🌐 ARCSTFUG Official Portal & AI Mentor Live!",
                 message = "Welcome to ARCSTFUG Official Portal. Use our integrated ARCSTFUG AI Assistant below for instant JEE/NEET doubt solving, formula revision, and live exam notices.",
@@ -1578,12 +1668,12 @@ class EduRepository {
             ),
             AnnouncementNotice(
                 id = "notice_pw_all_courses_2",
-                title = "⚡ PW All Courses (Class 9–12, JEE & NEET 2026) Activated",
-                message = "All 10 PW Batches — Lakshya JEE, Arjuna JEE, Prayas JEE, Yakeen NEET, Lakshya NEET, Arjuna NEET, Parishram Class 12, Uday Class 11, Udaan Class 10 & Neev Class 9 — are now bridged with Physics, Chemistry, Maths & Biology Lectures + DPPs.",
+                title = "⚡ PW All Courses (Class 9–12, JEE & NEET 2026/2027) Activated",
+                message = "All 24 PW Batches — Lakshya JEE, Arjuna JEE, Prayas JEE, Yakeen NEET, Lakshya NEET, Arjuna NEET, Parishram Class 12, Uday Class 11, Udaan Class 10 & Neev Class 9 — are now bridged with Physics, Chemistry, Maths & Biology Lectures + DPPs + Class Notes.",
                 categoryTag = "PW BATCH NOTICE",
                 authorName = "ARCSTFUG Academic Cell",
                 timestampLabel = "Live Update",
-                actionUrl = ExternalStudyLinks.ARCSTFUG_WEB_PORTAL_URL,
+                actionUrl = ExternalStudyLinks.STUDYOCEAN_PW_PORTAL_URL,
                 isPinned = true
             ),
             AnnouncementNotice(

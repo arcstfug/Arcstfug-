@@ -775,19 +775,51 @@ fun ProfileScreen(
                     }
                 }
 
-                if (doubtAiState is AiUiState.Error) {
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = RoseContainer,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = "AI Doubt Solver Error: ${doubtAiState.message}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = RoseError,
-                            modifier = Modifier.padding(12.dp)
-                        )
+                when (doubtAiState) {
+                    is AiUiState.Loading -> {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        ) {
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                            Text(
+                                text = "Gemini AI Tutor is solving your doubt step-by-step...",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = IndigoPrimary
+                            )
+                        }
                     }
+                    is AiUiState.Error -> {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = RoseContainer,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text(
+                                    text = "AI Doubt Solver Error: ${doubtAiState.message}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = RoseError
+                                )
+                                OutlinedButton(
+                                    onClick = {
+                                        onPostDoubt(
+                                            "Explain the most important ${selectedSubject.displayName} formula derivation and a solved JEE/NEET example.",
+                                            selectedSubject
+                                        )
+                                    },
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text("🔄 Retry with Gemini AI", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+                    else -> {}
                 }
 
                 doubts.forEach { doubt ->
@@ -912,14 +944,15 @@ fun ProfileScreen(
                     )
                 }
             },
-            confirmButton = {
+                    confirmButton = {
                 Button(
                     onClick = {
-                        if (doubtText.isNotBlank()) {
-                            onPostDoubt(doubtText, selectedSubject)
-                            doubtText = ""
-                            showDoubtDialog = false
+                        val query = doubtText.trim().ifEmpty {
+                            "Explain the most important ${selectedSubject.displayName} formula derivation and solve a high-yield JEE/NEET numerical example step-by-step."
                         }
+                        onPostDoubt(query, selectedSubject)
+                        doubtText = ""
+                        showDoubtDialog = false
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = IndigoPrimary),
                     modifier = Modifier.testTag("dialog_doubt_submit")

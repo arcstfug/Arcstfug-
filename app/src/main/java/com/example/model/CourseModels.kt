@@ -107,11 +107,15 @@ data class CourseBatch(
     val bannerDrawableRes: Int? = null,
     val availablePlans: List<String> = emptyList(),
     val featureBadge: String? = null,
-    val storageBucketUrl: String? = null
+    val storageBucketUrl: String? = null,
+    val isDonatedBatch: Boolean = false,
+    val isDirectSaved: Boolean = false,
+    val donatedBy: String = "PW Community Donor"
 )
 
 object ExternalStudyLinks {
     const val ARCSTFUG_WEB_PORTAL_URL = "https://arcstfug-app.netlify.app/"
+    const val STUDYOCEAN_PW_PORTAL_URL = "https://trms.studyoceanpw.site"
     const val PHYSICS_DRIVE_URL = "https://drive.google.com/drive/folders/1-Gii-7kSrT4Do8x6TkO3mhy4IxeP2o57"
     const val ALL_INDIA_TEST_SERIES_URL = "https://deltastudy.fun/missionjeet/251"
     const val FIREBASE_STORAGE_BUCKET = "gs://gen-lang-client-0387332814.appspot.com"

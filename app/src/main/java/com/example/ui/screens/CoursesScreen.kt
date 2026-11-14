@@ -32,19 +32,35 @@ fun CoursesScreen(
     courses: List<CourseBatch>,
     onOpenBatch: (String) -> Unit,
     onEnrollToggle: (String) -> Unit,
+    onDonateAndSaveBatch: (String) -> Unit = {},
+    isAutoSaveOnOpenEnabled: Boolean = true,
+    onToggleAutoSaveOnOpen: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var selectedCategory by remember { mutableStateOf("All") }
     var searchQuery by remember { mutableStateOf("") }
 
-    val categories = listOf("All", "Enrolled", "HACKER", "JEE Main & Adv", "NEET-UG", "Class 10 Board")
+    val categories = listOf(
+        "All",
+        "🌊 StudyOcean PW",
+        "🔥 PW 2027 Batches",
+        "🎁 Donated / Saved",
+        "Enrolled",
+        "HACKER",
+        "JEE Main & Adv",
+        "NEET-UG",
+        "Class 10 Board"
+    )
 
     val filteredCourses = courses.filter { course ->
         val matchesCategory = when (selectedCategory) {
             "All" -> true
+            "🌊 StudyOcean PW" -> course.id.startsWith("c_pw_") || course.title.contains("StudyOcean", ignoreCase = true)
+            "🔥 PW 2027 Batches" -> course.title.contains("2027", ignoreCase = true) || course.category.contains("2027", ignoreCase = true)
+            "🎁 Donated / Saved" -> course.isDirectSaved || course.isDonatedBatch
             "Enrolled" -> course.isEnrolled
-            else -> course.category.equals(selectedCategory, ignoreCase = true) ||
-                    course.tag.equals(selectedCategory, ignoreCase = true)
+            else -> course.category.contains(selectedCategory, ignoreCase = true) ||
+                    course.tag.contains(selectedCategory, ignoreCase = true)
         }
         val matchesSearch = course.title.contains(searchQuery, ignoreCase = true) ||
                 course.description.contains(searchQuery, ignoreCase = true) ||
@@ -104,6 +120,62 @@ fun CoursesScreen(
             }
         }
 
+        // 🎁 Batch Donate & Auto-Save Banner
+        item {
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = EmeraldSuccess.copy(alpha = 0.10f)
+                ),
+                border = CardDefaults.outlinedCardBorder(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("courses_batch_donate_banner")
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.CardGiftcard,
+                            contentDescription = "Batch Donate",
+                            tint = EmeraldSuccess,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Column {
+                            Text(
+                                text = "🎁 Batch Donate • Direct Save on Open",
+                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.ExtraBold),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = if (isAutoSaveOnOpenEnabled) {
+                                    "Koi bhi Premium Batch open hote hi direct save ho jayega ✓"
+                                } else {
+                                    "Tap '🎁 Batch Donate' on any batch to save directly"
+                                },
+                                style = MaterialTheme.typography.labelSmall,
+                                color = EmeraldSuccess
+                            )
+                        }
+                    }
+                    Switch(
+                        checked = isAutoSaveOnOpenEnabled,
+                        onCheckedChange = onToggleAutoSaveOnOpen,
+                        modifier = Modifier.testTag("courses_autosave_switch")
+                    )
+                }
+            }
+        }
+
         // Batch Count Summary
         item {
             Row(
@@ -129,7 +201,8 @@ fun CoursesScreen(
             CourseCardItem(
                 course = course,
                 onClick = { onOpenBatch(course.id) },
-                onEnrollToggle = { onEnrollToggle(course.id) }
+                onEnrollToggle = { onEnrollToggle(course.id) },
+                onDonateAndSave = { onDonateAndSaveBatch(course.id) }
             )
         }
     }
@@ -140,6 +213,7 @@ fun CourseCardItem(
     course: CourseBatch,
     onClick: () -> Unit,
     onEnrollToggle: () -> Unit,
+    onDonateAndSave: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -366,16 +440,43 @@ fun CourseCardItem(
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     OutlinedButton(
                         onClick = { onClick() },
                         modifier = Modifier
                             .weight(1f)
                             .testTag("course_explore_btn_${course.id}"),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
                     ) {
-                        Text("View Syllabus")
+                        Text("Open & Save", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    Button(
+                        onClick = onDonateAndSave,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (course.isDirectSaved) EmeraldSuccess else Color(0xFFD97706)
+                        ),
+                        modifier = Modifier
+                            .weight(1.15f)
+                            .testTag("course_donate_btn_${course.id}"),
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (course.isDirectSaved) Icons.Filled.CloudDone else Icons.Filled.CardGiftcard,
+                            contentDescription = "Batch Donate",
+                            tint = Color.White,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = if (course.isDirectSaved) "🎁 Saved ✓" else "🎁 Batch Donate",
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.ExtraBold
+                        )
                     }
 
                     Button(
@@ -384,13 +485,15 @@ fun CourseCardItem(
                             containerColor = if (course.isEnrolled) MaterialTheme.colorScheme.surfaceVariant else IndigoPrimary
                         ),
                         modifier = Modifier
-                            .weight(1f)
+                            .weight(0.95f)
                             .testTag("course_enroll_btn_${course.id}"),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
                     ) {
                         Text(
-                            text = if (course.isEnrolled) "Enrolled ✓" else "Enroll Now",
-                            color = if (course.isEnrolled) MaterialTheme.colorScheme.onSurfaceVariant else Color.White
+                            text = if (course.isEnrolled) "Enrolled ✓" else "Enroll",
+                            color = if (course.isEnrolled) MaterialTheme.colorScheme.onSurfaceVariant else Color.White,
+                            fontSize = 11.sp
                         )
                     }
                 }
